@@ -7,6 +7,8 @@ import taskRouter from './routes/taskRouter.js';
 import aiRouter from './routes/aiRouter.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import User from './models/User.js';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,12 +16,28 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // Server configuration
-app.use(cors());
+app.use(cors({
+    origin: ['http://localhost:3000'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+}));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 dotenv.config();
 
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+const profilesDir = path.join(uploadsDir, 'profiles');
+const bannersDir = path.join(uploadsDir, 'banners');
+
+[profilesDir, bannersDir].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+});
+
 // Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(uploadsDir));
 
 // Route for API - Move routes before MongoDB connection
 app.use('/api/users', userRouter);
@@ -27,7 +45,9 @@ app.use('/api/tasks', taskRouter);
 app.use('/api/ai', aiRouter);
 
 const port = process.env.PORT || 9000;
-const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/task-management';
+const mongoUri = 'mongodb://127.0.0.1:27017/task-management';
+
+console.log('Attempting to connect to MongoDB at:', mongoUri);
 
 // Server start
 app.listen(port, () => {
@@ -35,8 +55,21 @@ app.listen(port, () => {
     mongoose.connect(mongoUri, {
         useNewUrlParser: true,
         useUnifiedTopology: true
-    }).then(() => {
+    }).then(async () => {
         console.log('Connected to MongoDB');
+        
+        // Debug: Check for users in the database
+        try {
+            const users = await User.find({});
+            console.log('Found users in database:', users.length);
+            if (users.length > 0) {
+                console.log('Sample user emails:', users.map(u => u.email));
+            } else {
+                console.log('No users found in database');
+            }
+        } catch (error) {
+            console.error('Error querying users:', error);
+        }
     }).catch((error) => {
         console.error('Error connecting to MongoDB:', error);
     });

@@ -8,11 +8,12 @@ const UserContext = createContext()
 
 export function UserProvider({ children }) {
   const [profileImage, setProfileImage] = useState(null)
+  const [bannerImage, setBannerImage] = useState(null)
   const [userName, setUserName] = useState('')
   const [userEmail, setUserEmail] = useState('')
   const [userJob, setUserJob] = useState('')
-  const [userPhone, setUserPhone] = useState('none')
-  const [userLanguages, setUserLanguages] = useState('none')
+  const [userPhone, setUserPhone] = useState('')
+  const [userLanguages, setUserLanguages] = useState('')
   const [userLocation, setUserLocation] = useState('Casablanca, Morocco')
   const [userAbout, setUserAbout] = useState('')
   const [userSkills, setUserSkills] = useState([])
@@ -20,90 +21,155 @@ export function UserProvider({ children }) {
   useEffect(() => {
     // First try to load from localStorage
     const loadFromLocalStorage = () => {
-      const storedImage = localStorage.getItem('profileImage')
-      const storedName = localStorage.getItem('userName')
-      const storedEmail = localStorage.getItem('userEmail')
-      const storedJob = localStorage.getItem('userJob')
-      const storedPhone = localStorage.getItem('userPhone')
-      const storedLanguages = localStorage.getItem('userLanguages')
-      const storedLocation = localStorage.getItem('userLocation')
-      const storedAbout = localStorage.getItem('userAbout')
-      const storedSkills = JSON.parse(localStorage.getItem('userSkills') || '[]')
-      
-      if (storedImage) setProfileImage(storedImage)
-      if (storedName && storedName !== '') setUserName(storedName)
-      if (storedEmail && storedEmail !== '') setUserEmail(storedEmail)
-      if (storedJob && storedJob !== '') setUserJob(storedJob)
-      if (storedPhone && storedPhone !== 'none') setUserPhone(storedPhone)
-      if (storedLanguages && storedLanguages !== 'none') setUserLanguages(storedLanguages)
-      if (storedLocation && storedLocation !== '') setUserLocation(storedLocation)
-      if (storedAbout && storedAbout !== '') setUserAbout(storedAbout)
-      if (storedSkills && storedSkills.length > 0) setUserSkills(storedSkills)
+      try {
+        const storedImage = localStorage.getItem('profileImage')
+        const storedBannerImage = localStorage.getItem('bannerImage')
+        const storedName = localStorage.getItem('userName')
+        const storedEmail = localStorage.getItem('userEmail')
+        const storedJob = localStorage.getItem('userJob')
+        const storedPhone = localStorage.getItem('userPhone')
+        const storedLanguages = localStorage.getItem('userLanguages')
+        const storedLocation = localStorage.getItem('userLocation')
+        const storedAbout = localStorage.getItem('userAbout')
+        const storedSkills = JSON.parse(localStorage.getItem('userSkills') || '[]')
+        
+        if (storedImage && storedImage !== 'null' && storedImage !== 'undefined' && storedImage !== 'none') {
+          setProfileImage(storedImage)
+        }
+        if (storedBannerImage && storedBannerImage !== 'null' && storedBannerImage !== 'undefined' && storedBannerImage !== 'none') {
+          setBannerImage(storedBannerImage)
+        }
+        if (storedName && storedName !== '') setUserName(storedName)
+        if (storedEmail && storedEmail !== '') setUserEmail(storedEmail)
+        if (storedJob && storedJob !== '') setUserJob(storedJob)
+        if (storedPhone) setUserPhone(storedPhone)
+        if (storedLanguages) setUserLanguages(storedLanguages)
+        if (storedLocation && storedLocation !== '') setUserLocation(storedLocation)
+        if (storedAbout && storedAbout !== '') setUserAbout(storedAbout)
+        if (storedSkills && storedSkills.length > 0) setUserSkills(storedSkills)
+      } catch (error) {
+        console.error('Error loading from localStorage:', error)
+      }
     }
 
-    loadFromLocalStorage();
-  }, [])
+    // Only run on client-side and only on initial mount
+    if (typeof window !== 'undefined') {
+      loadFromLocalStorage()
+    }
+  }, []) // Empty dependency array means this only runs once on mount
 
-  const updateProfileImage = (newImage) => {
-    setProfileImage(newImage)
-    if (newImage) {
-      localStorage.setItem('profileImage', newImage)
-    } else {
-      localStorage.removeItem('profileImage')
+  const updateProfileImage = async (newImage) => {
+    try {
+      if (newImage && newImage !== 'none') {
+        setProfileImage(newImage)
+        localStorage.setItem('profileImage', newImage)
+      } else {
+        setProfileImage(null)
+        localStorage.removeItem('profileImage')
+        // Don't reload other user data when removing image
+      }
+    } catch (error) {
+      console.error('Error updating profile image:', error)
+    }
+  }
+
+  const updateBannerImage = async (newImage) => {
+    try {
+      if (newImage && newImage !== 'none') {
+        setBannerImage(newImage)
+        localStorage.setItem('bannerImage', newImage)
+      } else {
+        setBannerImage(null)
+        localStorage.removeItem('bannerImage')
+        // Don't reload other user data when removing image
+      }
+    } catch (error) {
+      console.error('Error updating banner image:', error)
     }
   }
 
   const updateUserName = (newName) => {
-    setUserName(newName)
-    if (newName) {
-      localStorage.setItem('userName', newName)
-    } else {
-      localStorage.removeItem('userName')
+    try {
+      setUserName(newName)
+      if (newName) {
+        localStorage.setItem('userName', newName)
+      } else {
+        localStorage.removeItem('userName')
+      }
+    } catch (error) {
+      console.error('Error updating user name:', error)
     }
   }
 
   const updateUserEmail = (newEmail) => {
-    setUserEmail(newEmail)
-    if (newEmail) {
-      localStorage.setItem('userEmail', newEmail)
-    } else {
-      localStorage.removeItem('userEmail')
+    try {
+      setUserEmail(newEmail)
+      if (newEmail) {
+        localStorage.setItem('userEmail', newEmail)
+      } else {
+        localStorage.removeItem('userEmail')
+      }
+    } catch (error) {
+      console.error('Error updating user email:', error)
     }
   }
 
   const updateUserJob = (newJob) => {
-    setUserJob(newJob)
-    if (newJob) {
-      localStorage.setItem('userJob', newJob)
-    } else {
-      localStorage.removeItem('userJob')
+    try {
+      setUserJob(newJob)
+      if (newJob) {
+        localStorage.setItem('userJob', newJob)
+      } else {
+        localStorage.removeItem('userJob')
+      }
+    } catch (error) {
+      console.error('Error updating user job:', error)
     }
   }
 
-  const updateUserPhone = (newPhone) => {
-    setUserPhone(newPhone)
-    if (newPhone) {
-      localStorage.setItem('userPhone', newPhone)
-    } else {
-      localStorage.removeItem('userPhone')
+  const updateUserPhone = async (newPhone) => {
+    try {
+      // Ensure we're not setting undefined or null
+      const phoneValue = newPhone || ''
+      console.log('Setting phone number in context:', phoneValue)
+      setUserPhone(phoneValue)
+      
+      // Only save to localStorage if we have a value
+      if (phoneValue) {
+        localStorage.setItem('userPhone', phoneValue)
+        console.log('Saved phone to localStorage:', phoneValue)
+      } else {
+        localStorage.removeItem('userPhone')
+        console.log('Removed phone from localStorage')
+      }
+    } catch (error) {
+      console.error('Error updating user phone:', error)
     }
   }
 
   const updateUserLanguages = (newLanguages) => {
-    setUserLanguages(newLanguages)
-    if (newLanguages) {
-      localStorage.setItem('userLanguages', newLanguages)
-    } else {
-      localStorage.removeItem('userLanguages')
+    try {
+      setUserLanguages(newLanguages)
+      if (newLanguages) {
+        localStorage.setItem('userLanguages', newLanguages)
+      } else {
+        localStorage.removeItem('userLanguages')
+      }
+    } catch (error) {
+      console.error('Error updating user languages:', error)
     }
   }
 
   const updateUserLocation = (newLocation) => {
-    setUserLocation(newLocation)
-    if (newLocation) {
-      localStorage.setItem('userLocation', newLocation)
-    } else {
-      localStorage.removeItem('userLocation')
+    try {
+      setUserLocation(newLocation)
+      if (newLocation) {
+        localStorage.setItem('userLocation', newLocation)
+      } else {
+        localStorage.removeItem('userLocation')
+      }
+    } catch (error) {
+      console.error('Error updating user location:', error)
     }
   }
 
@@ -112,7 +178,7 @@ export function UserProvider({ children }) {
       const token = Cookies.get('token');
       if (token) {
         // Update in database
-        const response = await axios.put('http://localhost:9000/api/users/profile', 
+        const response = await axios.put('/api/users/update-profile', 
           { about: newAbout },
           { 
             headers: {
@@ -150,7 +216,7 @@ export function UserProvider({ children }) {
         throw new Error('Authentication required')
       }
 
-      const response = await axios.put('http://localhost:9000/api/users/profile', {
+      const response = await axios.put('/api/users/update-profile', {
         skills: newSkills
       }, {
         headers: {
@@ -182,9 +248,10 @@ export function UserProvider({ children }) {
         throw new Error('Authentication required')
       }
 
-      const response = await axios.delete('http://localhost:9000/api/users/profile', {
+      const response = await axios.delete('http://localhost:9000/api/users/delete-account', {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       })
 
@@ -195,11 +262,12 @@ export function UserProvider({ children }) {
         Cookies.remove('token')
         // Reset all state
         setProfileImage(null)
+        setBannerImage(null)
         setUserName('')
         setUserEmail('')
         setUserJob('')
-        setUserPhone('none')
-        setUserLanguages('none')
+        setUserPhone('')
+        setUserLanguages('')
         setUserLocation('Casablanca, Morocco')
         setUserAbout('')
         setUserSkills([])
@@ -220,6 +288,7 @@ export function UserProvider({ children }) {
     <UserContext.Provider
       value={{
         profileImage,
+        bannerImage,
         userName,
         userEmail,
         userJob,
@@ -229,6 +298,7 @@ export function UserProvider({ children }) {
         userAbout,
         userSkills,
         updateProfileImage,
+        updateBannerImage,
         updateUserName,
         updateUserEmail,
         updateUserJob,

@@ -5,12 +5,21 @@ import { useForm } from "react-hook-form";
 import { useState } from "react";
 import axios from "axios";
 import Cookies from 'js-cookie';
+import { useUser } from '../../_context/UserContext';
 
 function Login() {
   const router = useRouter();
   const { register, handleSubmit, formState: { errors } } = useForm();
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { 
+    updateUserName, 
+    updateUserEmail, 
+    updateUserJob, 
+    updateUserLocation, 
+    updateProfileImage,
+    updateBannerImage 
+  } = useUser();
 
   const onSubmit = async (data) => {
     try {
@@ -31,14 +40,51 @@ function Login() {
             .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
             .join(' ');
             
+          // Clear any existing welcome state
+          localStorage.removeItem('hasShownWelcome');
+          
+          // Dispatch custom event for user change
+          const userChangeEvent = new Event('userChanged');
+          window.dispatchEvent(userChangeEvent);
+          
+          // Update both localStorage and context
           localStorage.setItem('token', response.data.token);
           localStorage.setItem('userName', formattedName);
           localStorage.setItem('userEmail', response.data.user.email);
           localStorage.setItem('userJob', response.data.user.job);
           localStorage.setItem('userLocation', response.data.user.location || 'Casablanca, Morocco');
           localStorage.setItem('userJoinedDate', response.data.user.joinedDate || new Date().toISOString());
+          
+          // Set profile and banner images
+          if (response.data.user.profileImage && response.data.user.profileImage !== 'none') {
+            localStorage.setItem('profileImage', response.data.user.profileImage);
+          } else {
+            localStorage.removeItem('profileImage');
+          }
+          
+          if (response.data.user.bannerImage && response.data.user.bannerImage !== 'none') {
+            localStorage.setItem('bannerImage', response.data.user.bannerImage);
+          } else {
+            localStorage.removeItem('bannerImage');
+          }
+          
           Cookies.set('token', response.data.token, { expires: 7 });
-          // Redirect immediately after setting tokens
+
+          // Update context immediately
+          updateUserName(formattedName);
+          updateUserEmail(response.data.user.email);
+          updateUserJob(response.data.user.job);
+          updateUserLocation(response.data.user.location || 'Casablanca, Morocco');
+          updateProfileImage(response.data.user.profileImage);
+          updateBannerImage(response.data.user.bannerImage);
+
+          // Debug log
+          console.log('Login successful, user data:', {
+            profileImage: response.data.user.profileImage,
+            bannerImage: response.data.user.bannerImage
+          });
+
+          // Redirect after context is updated
           router.replace('/overview?welcome=true');
         }
       } else {

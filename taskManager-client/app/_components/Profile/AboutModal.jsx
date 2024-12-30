@@ -22,7 +22,6 @@ export default function AboutModal({ isOpen, onClose, description }) {
             <FiX className="w-5 h-5" />
           </button>
         </div>
-
         {/* Content */}
         <div className="p-6 overflow-y-auto flex-grow scrollbar-hide hover:scrollbar-default transition-all">
           <div className="max-w-full pr-4">

@@ -96,7 +96,7 @@ export default function ProfileInfoModal({ isOpen, onClose, initialData, onSave 
         throw new Error('Authentication required');
       }
 
-      const response = await axios.put('http://localhost:9000/api/users/profile', {
+      const response = await axios.put('http://localhost:9000/api/users/update-profile', {
         fullName: formData.fullName,
         location: formData.country,
         languages: formData.languages || 'none',

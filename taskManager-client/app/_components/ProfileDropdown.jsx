@@ -3,16 +3,19 @@
 import Link from 'next/link'
 import { FiUser, FiHelpCircle, FiCheckCircle, FiLogOut } from 'react-icons/fi'
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Cookies from 'js-cookie'
 import toast from 'react-hot-toast'
 import { useUser } from '@/app/_context/UserContext'
 import Image from 'next/image'
+import { useLogoutMessage } from '../_hooks/useLogoutMessage'
 
 export default function ProfileDropdown({ isOpen, onClose }) {
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const router = useRouter()
   const dropdownRef = useRef(null)
   const { userName, userEmail, profileImage, userJob } = useUser()
+  const { showLogoutMessage } = useLogoutMessage()
   const userHandle = userName 
     ? `@${userName.toLowerCase().replace(/\s+/g, '')}`
     : '@user'
@@ -35,26 +38,43 @@ export default function ProfileDropdown({ isOpen, onClose }) {
 
   if (!isOpen) return null
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Prevent multiple logout attempts
+    if (isLoggingOut) {
+      console.log('🚫 Logout already in progress')
+      return
+    }
+
     try {
-      // Clear all authentication data
-      localStorage.removeItem('token')
-      localStorage.removeItem('userName')
-      localStorage.removeItem('userEmail')
-      localStorage.removeItem('userJob')
-      Cookies.remove('token')
+      setIsLoggingOut(true)
       
-      // Close the dropdown
-      onClose()
-      
-      // Show success message
-      toast.success('Logged out successfully')
-      
-      // Redirect to login page
-      router.replace('/auth/login')
+      // Show goodbye message and clear data
+      if (userName) {
+        const logoutSuccess = await showLogoutMessage(userName)
+        if (logoutSuccess) {
+          // Clear all authentication data
+          localStorage.removeItem('token')
+          localStorage.removeItem('userName')
+          localStorage.removeItem('userEmail')
+          localStorage.removeItem('userJob')
+          Cookies.remove('token')
+          
+          // Close the dropdown
+          onClose()
+          
+          // Redirect to login page
+          router.replace('/auth/login')
+        }
+      } else {
+        // No user name, just redirect
+        router.replace('/auth/login')
+      }
     } catch (error) {
-      console.error('Logout error:', error)
-      toast.error('Error logging out')
+      console.error('❌ Logout error:', error)
+      // Still try to redirect on error
+      router.replace('/auth/login')
+    } finally {
+      setIsLoggingOut(false)
     }
   }
 
@@ -138,9 +158,10 @@ export default function ProfileDropdown({ isOpen, onClose }) {
           <button
             onClick={handleLogout}
             className="w-full px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-lg shadow-sm hover:shadow transition-all duration-200 flex items-center justify-center space-x-2"
+            disabled={isLoggingOut}
           >
             <FiLogOut className="w-4 h-4" />
-            <span>Logout</span>
+            <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
           </button>
         </div>
       </div>

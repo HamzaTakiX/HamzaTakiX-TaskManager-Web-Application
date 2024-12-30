@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import ProfileHeader from '../_components/Profile/ProfileHeader'
 import ProfileBody from '../_components/Profile/ProfileBody'
 import Sidebar from '../_components/Shared/Sidebar'
+import { Toaster } from 'react-hot-toast'
 
 export default function ProfilePage() {
   const [timeFormat, setTimeFormat] = useState('24')
@@ -41,6 +42,30 @@ export default function ProfilePage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50/50">
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 3000,
+            style: {
+              background: '#22c55e',
+              color: '#fff',
+            },
+          },
+          error: {
+            duration: 3000,
+            style: {
+              background: '#ef4444',
+              color: '#fff',
+            },
+          },
+        }}
+      />
       <Sidebar />
       <div className="flex-1 pl-64">
         <ProfileHeader />

@@ -11,16 +11,18 @@ import { useUser } from '../../_context/UserContext'
 export default function ProfileHeader() {
   const { 
     profileImage, 
+    bannerImage,
     userName, 
     userEmail,
     userJob,
+    userLocation,
     updateProfileImage, 
-    updateUserName,
+    updateBannerImage,
     updateUserEmail,
-    updateUserJob
+    updateUserJob,
+    updateUserName,
+    updateUserLocation
   } = useUser()
-  const [bannerImage, setBannerImage] = useState(null)
-  const [userLocation, setUserLocation] = useState('')
   const [joinedDate, setJoinedDate] = useState(null)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showBannerMenu, setShowBannerMenu] = useState(false)
@@ -35,33 +37,72 @@ export default function ProfileHeader() {
   const profileMenuRef = useRef(null)
   const bannerMenuRef = useRef(null)
 
-  const showNotificationMessage = (message, type = 'success') => {
-    setShowNotification(false)
-    setTimeout(() => {
-      setNotificationMessage(message)
-      setNotificationType(type)
-      setShowNotification(true)
-      setTimeout(() => setShowNotification(false), 3000)
-    }, 100)
-  }
+  useEffect(() => {
+    console.log('Current user image data:', { profileImage, bannerImage });
+    
+    // Only set new values if they exist and are not 'none'
+    if (profileImage && profileImage !== 'none') {
+      localStorage.setItem('profileImage', profileImage);
+      console.log('Setting profileImage in localStorage:', profileImage);
+    } else {
+      localStorage.removeItem('profileImage');
+      console.log('Removing profileImage from localStorage');
+    }
+    
+    if (bannerImage && bannerImage !== 'none') {
+      localStorage.setItem('bannerImage', bannerImage);
+      console.log('Setting bannerImage in localStorage:', bannerImage);
+    } else {
+      localStorage.removeItem('bannerImage');
+      console.log('Removing bannerImage from localStorage');
+    }
+
+    // Log localStorage values
+    console.log('LocalStorage Image Values:');
+    console.log('localStorage profileImage:', localStorage.getItem('profileImage'));
+    console.log('localStorage bannerImage:', localStorage.getItem('bannerImage'));
+
+    // Log frontend display status
+    console.log('Frontend Image Display Status:');
+    console.log('profileImage displaying:', !!(profileImage && profileImage !== 'none'));
+    console.log('bannerImage displaying:', !!(bannerImage && bannerImage !== 'none'));
+  }, [profileImage, bannerImage])
 
   useEffect(() => {
-    const storedLocation = localStorage.getItem('userLocation')
-    const storedJoinedDate = localStorage.getItem('userJoinedDate')
-    const storedBannerImage = localStorage.getItem('bannerImage')
-
-    if (storedLocation) setUserLocation(storedLocation)
-    if (storedJoinedDate) {
+    const fetchUserData = async () => {
       try {
-        const date = new Date(storedJoinedDate)
-        if (!isNaN(date.getTime())) {
-          setJoinedDate(date)
+        const token = localStorage.getItem('token')
+        if (!token) return
+
+        const response = await axios.get('http://localhost:9000/api/users/me', {
+          headers: { 
+            Authorization: `Bearer ${token}` 
+          }
+        })
+
+        if (response.data.state) {
+          const userData = response.data.user
+          updateUserLocation(userData.location || 'Casablanca, Morocco')
+          setJoinedDate(userData.joinedDate || new Date().toISOString())
+          
+          // Store in localStorage
+          localStorage.setItem('userLocation', userData.location || 'Casablanca, Morocco')
+          localStorage.setItem('userJoinedDate', userData.joinedDate || new Date().toISOString())
+
+          // Update images if they exist
+          if (userData.profileImage) {
+            updateProfileImage(userData.profileImage)
+          }
+          if (userData.bannerImage) {
+            updateBannerImage(userData.bannerImage)
+          }
         }
       } catch (error) {
-        console.error('Error parsing joined date:', error)
+        console.error('Error fetching user data:', error)
       }
     }
-    if (storedBannerImage) setBannerImage(storedBannerImage)
+
+    fetchUserData()
   }, [])
 
   useEffect(() => {
@@ -96,59 +137,65 @@ export default function ProfileHeader() {
     }
   }, [])
 
+  const showNotificationMessage = (message, type = 'success') => {
+    setShowNotification(false)
+    setTimeout(() => {
+      setNotificationMessage(message)
+      setNotificationType(type)
+      setShowNotification(true)
+      setTimeout(() => setShowNotification(false), 3000)
+    }, 100)
+  }
+
   const handleBannerImageChange = async (event) => {
-    const file = event.target.files[0]
-    if (file) {
-      try {
-        setIsUploading(true)
-        showNotificationMessage('Uploading banner image...', 'info')
-        
-        const formData = new FormData()
-        formData.append('bannerImage', file)
+    const file = event.target.files?.[0]
+    if (!file) return
 
-        const response = await axios.post('http://localhost:9000/api/users/upload-images', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        })
+    try {
+      setIsUploading(true)
+      showNotificationMessage('Uploading banner image...', 'info')
+      
+      const formData = new FormData()
+      formData.append('bannerImage', file)
 
-        if (response.data.state) {
-          setBannerImage(response.data.user.bannerImage)
-          localStorage.setItem('bannerImage', response.data.user.bannerImage)
-          showNotificationMessage('Banner image updated successfully', 'success')
-        } else {
-          showNotificationMessage(response.data.message || 'Failed to upload banner image', 'error')
+      const response = await axios.post('http://localhost:9000/api/users/upload-images', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
         }
-      } catch (error) {
-        console.error('Error uploading banner image:', error)
-        showNotificationMessage('Failed to upload banner image. Please try again.', 'error')
-      } finally {
-        setIsUploading(false)
+      })
+
+      if (response.data.state) {
+        updateBannerImage(response.data.user.bannerImage)
+        localStorage.setItem('bannerImage', response.data.user.bannerImage)
+        setShowBannerMenu(false)
+        showNotificationMessage('Banner image updated successfully', 'success')
+      } else {
+        showNotificationMessage(response.data.message || 'Failed to upload banner image', 'error')
       }
+    } catch (error) {
+      console.error('Error uploading banner image:', error)
+      showNotificationMessage('Failed to upload banner image. Please try again.', 'error')
+    } finally {
+      setIsUploading(false)
     }
   }
 
   const handleRemoveBannerImage = async () => {
     try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        showNotificationMessage('Please log in to remove image', 'error')
-        return
-      }
-
       showNotificationMessage('Removing banner image...', 'info')
       const response = await axios.post('http://localhost:9000/api/users/upload-images', 
         { removeBannerImage: true },
         {
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`
           }
         }
       )
 
       if (response.data.state) {
-        setBannerImage(null)
+        updateBannerImage(null)
         localStorage.removeItem('bannerImage')
         setShowBannerMenu(false)
         showNotificationMessage('Banner image removed successfully', 'success')
@@ -173,12 +220,13 @@ export default function ProfileHeader() {
       const response = await axios.post('http://localhost:9000/api/users/upload-images', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
       })
 
       if (response.data.state) {
         updateProfileImage(response.data.user.profileImage)
+        setShowProfileMenu(false)
         showNotificationMessage('Profile image updated successfully', 'success')
       } else {
         showNotificationMessage(response.data.message || 'Failed to upload profile image', 'error')
@@ -197,8 +245,9 @@ export default function ProfileHeader() {
         { removeProfileImage: true },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
         }
       )
 
@@ -240,10 +289,10 @@ export default function ProfileHeader() {
       
       {/* Banner */}
       <div className="relative h-48 bg-gradient-to-r from-blue-500 to-purple-600">
-        {bannerImage && (
+        {bannerImage && bannerImage !== 'none' && (
           <div className="absolute inset-0 z-0">
             <Image
-              src={`http://localhost:9000${bannerImage}`}
+              src={bannerImage.startsWith('http') ? bannerImage : `http://localhost:9000${bannerImage}`}
               alt="Banner"
               fill
               className="object-cover"
@@ -256,7 +305,7 @@ export default function ProfileHeader() {
         
         {/* Banner Menu */}
         <div className="absolute bottom-4 right-4" style={{ zIndex: 1000 }}>
-          {bannerImage ? (
+          {bannerImage && bannerImage !== 'none' ? (
             <div className="relative inline-block text-left" ref={bannerMenuRef}>
               <motion.button 
                 whileHover={{ scale: 1.1 }}
@@ -324,10 +373,10 @@ export default function ProfileHeader() {
                 whileHover={{ scale: 1.02 }}
                 className="w-32 h-32 rounded-full border-4 border-white bg-blue-600 shadow-md overflow-hidden flex items-center justify-center text-white"
               >
-                {profileImage ? (
+                {profileImage && profileImage !== 'none' ? (
                   <div className="relative w-full h-full">
                     <Image
-                      src={`http://localhost:9000${profileImage}`}
+                      src={profileImage.startsWith('http') ? profileImage : `http://localhost:9000${profileImage}`}
                       alt="Profile"
                       fill
                       className="object-cover"
@@ -349,7 +398,7 @@ export default function ProfileHeader() {
               
               {/* Profile Image Menu */}
               <div className="absolute bottom-0 right-0">
-                {profileImage ? (
+                {profileImage && profileImage !== 'none' ? (
                   <div className="relative" ref={profileMenuRef}>
                     <motion.button 
                       whileHover={{ scale: 1.1 }}

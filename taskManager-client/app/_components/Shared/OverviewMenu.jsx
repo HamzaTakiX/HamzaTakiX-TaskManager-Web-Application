@@ -154,16 +154,18 @@ export default function OverviewMenu() {
                 }`}
               >
                 <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium overflow-hidden">
-                  {profileImage ? (
+                  {profileImage && profileImage !== 'none' ? (
                     <Image
-                      src={`http://localhost:9000${profileImage}`}
+                      src={profileImage.startsWith('http') ? profileImage : `http://localhost:9000${profileImage}`}
                       alt="Profile"
                       width={32}
                       height={32}
                       className="object-cover w-full h-full"
                     />
                   ) : (
-                    <FiUser className="h-5 w-5" />
+                    <div className="text-sm font-medium">
+                      {userName ? userName.charAt(0).toUpperCase() : <FiUser className="h-5 w-5" />}
+                    </div>
                   )}
                 </div>
                 {showTooltip && userName && (

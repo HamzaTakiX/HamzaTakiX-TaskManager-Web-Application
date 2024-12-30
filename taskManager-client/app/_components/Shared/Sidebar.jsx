@@ -10,18 +10,24 @@ import { useUser } from '../../_context/UserContext'
 import Cookies from 'js-cookie'
 import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
+import { FiLogOut } from 'react-icons/fi'
+import { useLogoutMessage } from '@/app/_hooks/useLogoutMessage'
 
 export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [showDropdown, setShowDropdown] = useState(false)
-  const { profileImage, userName, userEmail } = useUser()
+  const { profileImage, userName, userEmail, updateUserName, updateUserEmail } = useUser()
+  const [isLoading, setIsLoading] = useState(true)
   const buttonRef = useRef(null)
   const dropdownRef = useRef(null)
   const { theme, themes } = useTheme()
   const currentTheme = themes[theme] || themes.light
   const isCalendarPage = pathname === '/calendar'
   const isDarkTheme = isCalendarPage && theme === 'dark'
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const { showLogoutMessage } = useLogoutMessage();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -45,25 +51,85 @@ export default function Sidebar() {
     }
   }, [showDropdown])
 
-  const handleLogout = () => {
-    try {
-      // Clear all authentication data
-      localStorage.removeItem('token')
-      localStorage.removeItem('userName')
-      localStorage.removeItem('userEmail')
-      localStorage.removeItem('userJob')
-      Cookies.remove('token')
-      
-      // Show success message
-      toast.success('Logged out successfully')
-      
-      // Redirect to login page
-      router.replace('/auth/login')
-    } catch (error) {
-      console.error('Logout error:', error)
-      toast.error('Error logging out')
+  useEffect(() => {
+    const loadUserData = async () => {
+      setIsLoading(true)
+      try {
+        // Check if we have user data in context
+        if (userName && userEmail) {
+          setIsLoading(false)
+          return
+        }
+
+        // Check if we have a token
+        const token = localStorage.getItem('token')
+        if (!token) {
+          setIsLoading(false)
+          return
+        }
+
+        // Get data from localStorage
+        const storedName = localStorage.getItem('userName')
+        const storedEmail = localStorage.getItem('userEmail')
+        
+        if (storedName && storedEmail) {
+          // Update context with stored data
+          updateUserName(storedName)
+          updateUserEmail(storedEmail)
+        }
+      } finally {
+        setIsLoading(false)
+      }
     }
-  }
+    
+    loadUserData()
+  }, [userName, userEmail, updateUserName, updateUserEmail])
+
+  const handleLogout = async () => {
+    // Prevent multiple logout attempts
+    if (isLoggingOut) {
+      console.log('🚫 Logout already in progress');
+      return;
+    }
+
+    const userName = localStorage.getItem('userName');
+    console.log('🔄 Logout Initiated:', {
+      currentUser: userName,
+      localStorage: {
+        token: !!localStorage.getItem('token'),
+        userName: localStorage.getItem('userName'),
+        userEmail: localStorage.getItem('userEmail'),
+        userJob: localStorage.getItem('userJob')
+      },
+      cookies: {
+        token: !!Cookies.get('token')
+      }
+    });
+    
+    try {
+      setIsLoggingOut(true);
+      
+      // Show goodbye message and clear data
+      if (userName) {
+        const logoutSuccess = await showLogoutMessage(userName);
+        if (logoutSuccess) {
+          // Redirect to login page
+          console.log('🔄 Redirecting to login page...');
+          router.replace('/auth/login');
+        }
+      } else {
+        // No user name, just redirect
+        router.replace('/auth/login');
+      }
+    } catch (error) {
+      console.error('❌ Logout error:', error);
+      toast.error('Error logging out');
+      // Still try to redirect on error
+      router.replace('/auth/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const handleProfileClick = () => {
     router.push('/profile')
@@ -149,25 +215,38 @@ export default function Sidebar() {
         <div className="flex items-center justify-between relative">
           <div className="flex items-center">
             <div className="relative h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium overflow-hidden">
-              {profileImage ? (
+              {isLoading ? (
+                <div className="animate-pulse w-full h-full bg-blue-400" />
+              ) : profileImage && profileImage !== 'none' ? (
                 <Image
-                  src={`http://localhost:9000${profileImage}`}
+                  src={profileImage.startsWith('http') ? profileImage : `http://localhost:9000${profileImage}`}
                   alt="Profile"
                   width={40}
                   height={40}
                   className="object-cover w-full h-full"
                 />
               ) : (
-                <RiUser3Line className="h-5 w-5" />
+                <div className="text-sm font-medium">
+                  {userName ? userName.charAt(0).toUpperCase() : <RiUser3Line className="h-5 w-5" />}
+                </div>
               )}
             </div>
             <div className="ml-2">
-              <div className={`text-sm font-medium ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
-                {userName || 'User'}
-              </div>
-              <div className={`text-xs text-gray-500 ${isDarkTheme ? 'text-gray-400' : ''}`}>
-                {userEmail || 'user@example.com'}
-              </div>
+              {isLoading ? (
+                <div className="space-y-2">
+                  <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-3 w-24 bg-gray-200 rounded animate-pulse" />
+                </div>
+              ) : (
+                <>
+                  <div className={`text-sm font-medium ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                    {userName || 'User'}
+                  </div>
+                  <div className={`text-xs text-gray-500 ${isDarkTheme ? 'text-gray-400' : ''}`}>
+                    {userEmail || 'user@example.com'}
+                  </div>
+                </>
+              )}
             </div>
           </div>
           <motion.button 
@@ -184,13 +263,14 @@ export default function Sidebar() {
               e.stopPropagation()
               setShowDropdown(!showDropdown)
             }}
+            disabled={isLoading}
           >
-            <RiMoreLine className="h-5 w-5" />
+            <RiMoreLine className={`h-5 w-5 ${isLoading ? 'opacity-50' : ''}`} />
           </motion.button>
 
           {/* Dropdown Menu */}
           <AnimatePresence>
-            {showDropdown && (
+            {showDropdown && !isLoading && (
               <motion.div 
                 ref={dropdownRef}
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
