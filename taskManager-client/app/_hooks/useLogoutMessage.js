@@ -10,8 +10,8 @@ export function useLogoutMessage() {
   const toastRef = useRef(null);
 
   const clearAllData = () => {
-    console.log('🧹 Clearing all application data...');
-    
+    console.log(' Clearing all application data...');
+
     // Clear all localStorage items
     const itemsToRemove = [
       'token',
@@ -28,7 +28,7 @@ export function useLogoutMessage() {
     itemsToRemove.forEach(item => {
       const value = localStorage.getItem(item);
       if (value) {
-        console.log(`📤 Removing from localStorage: ${item}`);
+        console.log(` Removing from localStorage: ${item}`);
         localStorage.removeItem(item);
       }
     });
@@ -41,11 +41,11 @@ export function useLogoutMessage() {
     document.cookie.split(";").forEach(cookie => {
       const name = cookie.split("=")[0].trim();
       document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
-      console.log(`🍪 Removed cookie: ${name}`);
+      console.log(` Removed cookie: ${name}`);
     });
 
     localStorage.clear(); // Make sure everything is cleared
-    console.log('✨ All application data cleared');
+    console.log(' All application data cleared');
   };
 
   const showLogoutMessage = async (userName) => {
@@ -54,43 +54,51 @@ export function useLogoutMessage() {
 
     // Only show toast if we're not in debounce period
     if (userName && timeSinceLastToast > TOAST_DEBOUNCE_MS && !toastRef.current) {
-      console.log('👋 Showing goodbye message for:', userName);
+      console.log(' Showing goodbye message for:', userName);
       lastToastTime = now;
 
       try {
         // Clear any existing toasts
         await toast.dismiss();
-        console.log('🧹 Cleared existing toasts');
+        console.log(' Cleared existing toasts');
 
         // Show the goodbye toast
-        toast.success(
-          <div className="flex items-center gap-2">
-            <FiLogOut className="h-5 w-5" />
-            <span>Goodbye, {userName}! See you soon! 👋</span>
-          </div>,
+        toastRef.current = toast.custom(
+          (t) => (
+            <div
+              className={`${
+                t.visible ? 'animate-enter' : 'animate-leave'
+              } max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex items-center justify-between p-4 gap-3`}
+            >
+              <div className="flex items-center gap-3">
+                <FiLogOut className="h-6 w-6 text-blue-500" />
+                <p className="text-gray-900 font-medium">
+                  Goodbye, {userName}! See you soon! 👋
+                </p>
+              </div>
+            </div>
+          ),
           {
-            id: 'logout-message',
             duration: 3000,
             position: 'top-center',
           }
         );
 
-        // Wait briefly for toast to be visible
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Wait for toast to be shown
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Clear all data immediately after showing toast
+        // Clear all data
         clearAllData();
         
-        return true; // Indicate successful logout
+        return true;
       } catch (error) {
-        console.error('❌ Error showing logout message:', error);
-        clearAllData(); // Still clear data even if toast fails
-        return true; // Still allow logout
+        console.error(' Error showing logout message:', error);
+        clearAllData();
+        return true;
       }
     } else {
-      // If we can't show toast, still clear data
       clearAllData();
-      return true; // Still allow logout
+      return true;
     }
   };
 

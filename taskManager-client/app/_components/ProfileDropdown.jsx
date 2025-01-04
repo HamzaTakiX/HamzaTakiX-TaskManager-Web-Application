@@ -7,6 +7,8 @@ import { useEffect, useRef, useState } from 'react'
 import Cookies from 'js-cookie'
 import toast from 'react-hot-toast'
 import { useUser } from '@/app/_context/UserContext'
+import { useSettings } from '@/app/_context/SettingsContext'
+import { translations } from '@/app/_utils/translations'
 import Image from 'next/image'
 import { useLogoutMessage } from '../_hooks/useLogoutMessage'
 
@@ -15,7 +17,12 @@ export default function ProfileDropdown({ isOpen, onClose }) {
   const router = useRouter()
   const dropdownRef = useRef(null)
   const { userName, userEmail, profileImage, userJob } = useUser()
+  const { settings } = useSettings()
   const { showLogoutMessage } = useLogoutMessage()
+  
+  // Get translations
+  const t = translations[settings.language].profileDropdown
+  
   const userHandle = userName 
     ? `@${userName.toLowerCase().replace(/\s+/g, '')}`
     : '@user'
@@ -79,9 +86,9 @@ export default function ProfileDropdown({ isOpen, onClose }) {
   }
 
   const menuItems = [
-    { icon: FiUser, text: 'My Profile', href: '/profile' },
-    { icon: FiHelpCircle, text: 'FAQ', href: '/faq' },
-    { icon: FiCheckCircle, text: 'Verified', className: 'text-green-500', static: true, iconClassName: 'text-green-500' },
+    { icon: FiUser, text: t.myProfile, href: '/profile' },
+    { icon: FiHelpCircle, text: t.faq, href: '/faq' },
+    { icon: FiCheckCircle, text: t.verified, className: 'text-green-500', static: true, iconClassName: 'text-green-500' },
   ]
 
   return (
@@ -116,7 +123,7 @@ export default function ProfileDropdown({ isOpen, onClose }) {
             </div>
             <div className="flex-1">
               <p className="text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                {userName || 'User'}
+                {userName || t.user}
               </p>
               <p className="text-sm text-gray-500 mb-1">{userHandle}</p>
               {userJob && (
@@ -161,7 +168,7 @@ export default function ProfileDropdown({ isOpen, onClose }) {
             disabled={isLoggingOut}
           >
             <FiLogOut className="w-4 h-4" />
-            <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+            <span>{isLoggingOut ? t.loggingOut : t.logout}</span>
           </button>
         </div>
       </div>

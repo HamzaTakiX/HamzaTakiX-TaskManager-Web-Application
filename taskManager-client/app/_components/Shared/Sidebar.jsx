@@ -7,6 +7,9 @@ import Image from 'next/image'
 import { useState, useEffect, useRef } from 'react'
 import { useTheme } from '@/app/_context/ThemeContext'
 import { useUser } from '../../_context/UserContext'
+import { useTask } from '../../_context/TaskContext'
+import { useSettings } from '../../_context/SettingsContext'
+import { translations } from '../../_utils/translations'
 import Cookies from 'js-cookie'
 import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -18,6 +21,8 @@ export default function Sidebar() {
   const router = useRouter()
   const [showDropdown, setShowDropdown] = useState(false)
   const { profileImage, userName, userEmail, updateUserName, updateUserEmail } = useUser()
+  const { taskCount } = useTask()
+  const { settings } = useSettings()
   const [isLoading, setIsLoading] = useState(true)
   const buttonRef = useRef(null)
   const dropdownRef = useRef(null)
@@ -27,10 +32,13 @@ export default function Sidebar() {
   const isDarkTheme = isCalendarPage && theme === 'dark'
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  // Get translations based on current language
+  const t = translations[settings.language].sidebar
+
   const { showLogoutMessage } = useLogoutMessage();
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    function handleClickOutside(event) {
       // Check if click is outside both the button and dropdown
       if (
         dropdownRef.current && 
@@ -85,8 +93,11 @@ export default function Sidebar() {
     loadUserData()
   }, [userName, userEmail, updateUserName, updateUserEmail])
 
+  useEffect(() => {
+    console.log('Current taskCount:', taskCount);
+  }, [taskCount]);
+
   const handleLogout = async () => {
-    // Prevent multiple logout attempts
     if (isLoggingOut) {
       console.log('🚫 Logout already in progress');
       return;
@@ -109,22 +120,17 @@ export default function Sidebar() {
     try {
       setIsLoggingOut(true);
       
-      // Show goodbye message and clear data
       if (userName) {
-        const logoutSuccess = await showLogoutMessage(userName);
-        if (logoutSuccess) {
-          // Redirect to login page
-          console.log('🔄 Redirecting to login page...');
-          router.replace('/auth/login');
-        }
-      } else {
-        // No user name, just redirect
-        router.replace('/auth/login');
+        await showLogoutMessage(userName);
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
+      
+      console.log('🔄 Redirecting to login page...');
+      router.replace('/auth/login');
+      
     } catch (error) {
       console.error('❌ Logout error:', error);
       toast.error('Error logging out');
-      // Still try to redirect on error
       router.replace('/auth/login');
     } finally {
       setIsLoggingOut(false);
@@ -137,7 +143,9 @@ export default function Sidebar() {
   }
 
   const getLinkStyles = (path) => {
-    const isActive = pathname === path
+    const isActive = path === '/overview' 
+      ? pathname === path || pathname === '/list'  
+      : pathname === path
     const baseClasses = 'flex items-center px-2 py-2 rounded-lg group'
     
     if (isCalendarPage) {
@@ -158,7 +166,7 @@ export default function Sidebar() {
       <div className={`h-16 flex items-center px-4 border-b ${isCalendarPage ? currentTheme.border : 'border-gray-200'}`}>
         <Link href="/" className="text-[#1D4ED8] flex items-center">
           <SiTask className="h-7 w-7" />
-          <h1 className="ml-2.5 font-semibold text-lg">Star Company</h1>
+          <h1 className="ml-2.5 font-semibold text-lg">{t.company}</h1>
         </Link>
       </div>
 
@@ -170,7 +178,7 @@ export default function Sidebar() {
             className={getLinkStyles('/dashboard')}
           >
             <RiDashboardLine className={`h-5 w-5 mr-3 ${isDarkTheme && pathname !== '/dashboard' ? 'text-white' : ''}`} />
-            <span className="text-sm font-medium">Dashboard</span>
+            <span className="text-sm font-medium">{t.dashboard}</span>
           </Link>
 
           <Link 
@@ -179,8 +187,12 @@ export default function Sidebar() {
           >
             <div className="flex items-center w-full relative">
               <RiTaskLine className={`h-5 w-5 mr-3 ${isDarkTheme && pathname !== '/tasks' ? 'text-white' : ''}`} />
-              <span className="text-sm font-medium">Tasks</span>
-              <span className="absolute -top-1 right-0 min-w-[20px] h-5 flex items-center justify-center text-xs font-medium px-1.5 rounded-full bg-blue-100 text-blue-600">10</span>
+              <span className="text-sm font-medium">{t.tasks}</span>
+              {taskCount > 0 && (
+                <span className="absolute -top-1 right-0 min-w-[20px] h-5 flex items-center justify-center text-xs font-medium px-1.5 rounded-full bg-blue-100 text-blue-600">
+                  {taskCount}
+                </span>
+              )}
             </div>
           </Link>
 
@@ -189,7 +201,7 @@ export default function Sidebar() {
             className={getLinkStyles('/overview')}
           >
             <RiLayoutGridLine className={`h-5 w-5 mr-3 ${isDarkTheme && pathname !== '/overview' ? 'text-white' : ''}`} />
-            <span className="text-sm font-medium">Overview</span>
+            <span className="text-sm font-medium">{t.overview}</span>
           </Link>
 
           <Link 
@@ -197,7 +209,7 @@ export default function Sidebar() {
             className={getLinkStyles('/settings')}
           >
             <RiSettings4Line className={`h-5 w-5 mr-3 ${isDarkTheme && pathname !== '/settings' ? 'text-white' : ''}`} />
-            <span className="text-sm font-medium">Settings</span>
+            <span className="text-sm font-medium">{t.settings}</span>
           </Link>
 
           <Link 
@@ -205,7 +217,7 @@ export default function Sidebar() {
             className={getLinkStyles('/profile')}
           >
             <RiUser3Line className={`h-5 w-5 mr-3 ${isDarkTheme && pathname !== '/profile' ? 'text-white' : ''}`} />
-            <span className="text-sm font-medium">Profile</span>
+            <span className="text-sm font-medium">{t.profile}</span>
           </Link>
         </div>
       </nav>
@@ -292,7 +304,7 @@ export default function Sidebar() {
                   }`}
                 >
                   <RiUser3Line className="h-4 w-4 mr-2" />
-                  My Profile
+                  {t.profile}
                 </button>
                 <button
                   onClick={handleLogout}
@@ -301,7 +313,7 @@ export default function Sidebar() {
                   }`}
                 >
                   <RiLogoutBoxLine className="h-4 w-4 mr-2" />
-                  Logout
+                  {t.logout}
                 </button>
               </motion.div>
             )}

@@ -28,13 +28,13 @@ const userSchema = new Schema({
         type: String,
         required: false,
         trim: true,
-        default: ''
+        default: 'NO foun Number'
     },
     languages: {
         type: String,
         required: false,
         trim: true,
-        default: ''
+        default: 'English'
     },
     location: {
         type: String,
@@ -64,7 +64,16 @@ const userSchema = new Schema({
     resetPasswordExpires: Date,
     joinedDate: {
         type: Date,
-        default: Date.now,
+        default: Date.now
+    },
+    notificationSettings: {
+        taskNotifs: { type: Boolean, default: true },
+        taskReminders: { type: Boolean, default: true },
+        errorNotifs: { type: Boolean, default: true },
+        successNotifs: { type: Boolean, default: true },
+        settingsNotifs: { type: Boolean, default: true },
+        updateNotifs: { type: Boolean, default: true },
+        profileNotifs: { type: Boolean, default: true }
     },
 });
 

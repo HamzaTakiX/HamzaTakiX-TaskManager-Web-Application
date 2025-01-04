@@ -1,7 +1,8 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { FiSearch } from 'react-icons/fi'
+import { FiSearch, FiInbox } from 'react-icons/fi'
+import { RiSearchEyeLine } from 'react-icons/ri'
 import { useTheme } from '@/app/_context/ThemeContext'
 
 const NoSearchResults = ({ query, onClearSearch }) => {
@@ -25,7 +26,7 @@ const NoSearchResults = ({ query, onClearSearch }) => {
           stiffness: 300,
           damping: 20
         }}
-        className="relative mb-6"
+        className="relative mb-8"
       >
         <motion.div
           animate={{ 
@@ -37,50 +38,71 @@ const NoSearchResults = ({ query, onClearSearch }) => {
             repeat: Infinity,
             ease: "easeInOut"
           }}
-          className="absolute inset-0 bg-blue-100/50 rounded-full blur-xl"
+          className="absolute inset-0 bg-gradient-to-r from-blue-100/50 to-purple-100/50 rounded-full blur-xl"
         />
-        <motion.div 
-          className="relative"
-          animate={{ 
-            rotate: [0, 10, 0, -10, 0],
-            scale: [1, 1.1, 1, 1.1, 1]
-          }}
-          transition={{ 
-            duration: 5,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        >
-          <FiSearch className="w-16 h-16 text-blue-500/70" />
-        </motion.div>
+        <div className="relative flex items-center justify-center">
+          <motion.div 
+            className="text-6xl text-blue-500"
+            animate={{ 
+              rotate: [0, 10, 0, -10, 0],
+              scale: [1, 1.1, 1, 1.1, 1]
+            }}
+            transition={{ 
+              duration: 5,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            <RiSearchEyeLine className="relative z-10" />
+          </motion.div>
+          <motion.div 
+            className="absolute text-4xl text-purple-400 opacity-50"
+            initial={{ scale: 0.8, x: -5, y: -5 }}
+            animate={{ 
+              scale: [0.8, 1, 0.8],
+              x: [-5, 0, -5],
+              y: [-5, 0, -5],
+            }}
+            transition={{ 
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            <FiInbox />
+          </motion.div>
+        </div>
       </motion.div>
-      <motion.h3 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+
+      <motion.h3
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
-        className="text-xl font-semibold text-gray-900 mb-2"
+        className="text-xl font-semibold mb-2"
       >
-        No results found for "{query}"
+        No matching tasks found
       </motion.h3>
+      
       <motion.p
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
-        className="text-gray-500 text-center mb-6"
+        className="text-gray-500 text-center mb-4"
       >
-        Try adjusting your search to find what you're looking for.
+        {query ? `No tasks match "${query}"` : 'No tasks available'}
       </motion.p>
-      <motion.button
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={onClearSearch}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-      >
-        Clear Search
-      </motion.button>
+
+      {query && (
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          onClick={onClearSearch}
+          className="px-4 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          Clear Search
+        </motion.button>
+      )}
     </motion.div>
   )
 }

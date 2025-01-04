@@ -15,7 +15,18 @@ export const registerUser = async (req, res) => {
         fullName = fullName.toLowerCase();
         // If location is not provided, it will use the default from the model
         const newUser = await createUser({ fullName, job, email, password, location });
-        res.json({ message: 'User registered successfully', user: newUser , 'state' : true});
+        res.json({ 
+            message: 'User registered successfully', 
+            user: {
+                id: newUser._id,
+                fullName: newUser.fullName,
+                email: newUser.email,
+                job: newUser.job,
+                location: newUser.location,
+                joinedDate: newUser.joinedDate
+            }, 
+            state: true
+        });
     } catch (error) {
         console.error('Registration error:', error);
         res.status(500).json({ message: 'Error registering user', error: error.message, 'state' : false });
@@ -53,7 +64,10 @@ export const login = async (req, res) => {
 
         // Generate token
         const token = jwt.sign(
-            { userId: user._id },
+            { 
+                userId: user._id,
+                email: user.email 
+            },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
@@ -88,7 +102,8 @@ export const login = async (req, res) => {
                 about: user.about,
                 skills: user.skills,
                 profileImage: user.profileImage === 'none' ? null : user.profileImage,
-                bannerImage: user.bannerImage === 'none' ? null : user.bannerImage
+                bannerImage: user.bannerImage === 'none' ? null : user.bannerImage,
+                joinedDate: user.joinedDate
             }
         });
     } catch (error) {
@@ -368,14 +383,15 @@ export const updateProfile = async (req, res) => {
                 id: user._id,
                 fullName: user.fullName,
                 email: user.email,
+                job: user.job,
                 location: user.location,
                 languages: user.languages,
                 phoneNumber: user.phoneNumber,
-                job: user.job,
                 about: user.about,
+                skills: user.skills,
                 profileImage: user.profileImage,
                 bannerImage: user.bannerImage,
-                skills: user.skills
+                joinedDate: user.joinedDate
             },
             state: true
         });
@@ -503,7 +519,11 @@ export const exportUserData = async (req, res) => {
 
 export const getCurrentUser = async (req, res) => {
     try {
-        const user = await User.findById(req.user.userId);
+        // Get userId from req.user
+        const userId = req.user.userId;
+        console.log('Getting current user with ID:', userId);
+
+        const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({
                 state: false,

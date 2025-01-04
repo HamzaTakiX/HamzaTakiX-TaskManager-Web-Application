@@ -1,12 +1,10 @@
 'use client'
 
-import { FiClipboard, FiPlus } from 'react-icons/fi'
+import { FiClipboard } from 'react-icons/fi'
 import { motion } from 'framer-motion'
 import { useTask } from '@/app/_context/TaskContext'
 
 export default function NoTasks() {
-  const { addTask } = useTask()
-
   const iconVariants = {
     initial: { rotate: -10, scale: 0.8 },
     animate: {
@@ -35,18 +33,6 @@ export default function NoTasks() {
     }
   }
 
-  const handleCreateTask = () => {
-    addTask({
-      title: '',
-      description: '',
-      status: 'todo',
-      priority: 'medium',
-      category: 'general',
-      startDate: new Date().toISOString(),
-      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-    })
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -59,26 +45,30 @@ export default function NoTasks() {
           initial="initial"
           animate="animate"
           whileHover="hover"
-          className="p-6 bg-blue-50 rounded-full ring-8 ring-blue-50/50 cursor-pointer"
-          onClick={handleCreateTask}
+          className="p-6 bg-blue-50 rounded-full ring-8 ring-blue-50/50"
         >
           <FiClipboard className="w-12 h-12 text-blue-500" />
         </motion.div>
         <div className="space-y-2">
-          <h3 className="text-2xl font-semibold text-gray-900">No tasks yet</h3>
+          <h3 className="text-2xl font-semibold text-gray-900">No Tasks Found</h3>
           <p className="text-base text-gray-500 max-w-sm">
-            Your task list is empty. Create your first task to get started!
+            There are currently no tasks that are completed or in progress. Tasks marked as "Done" or "In Progress" will appear here.
           </p>
+          <div className="flex flex-col items-center mt-4 space-y-2">
+            <div className="flex items-center space-x-2">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-50 text-yellow-800 border border-yellow-200">
+                In Progress
+              </span>
+              <span className="text-gray-500">or</span>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-800 border border-green-200">
+                Done
+              </span>
+            </div>
+            <p className="text-sm text-gray-500">
+              Tasks with these statuses will be displayed here
+            </p>
+          </div>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.03, y: -1 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={handleCreateTask}
-          className="inline-flex items-center px-4 py-2 bg-white text-blue-600 text-sm font-medium rounded-md border border-blue-200 hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50 transition-all shadow-sm"
-        >
-          <FiPlus className="w-4 h-4 mr-1.5" />
-          Create Task
-        </motion.button>
       </div>
     </motion.div>
   )

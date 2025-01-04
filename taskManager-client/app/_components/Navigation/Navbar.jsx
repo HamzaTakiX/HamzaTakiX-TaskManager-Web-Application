@@ -100,7 +100,7 @@ function  Narbar() {
                     <IoIosArrowDown className={`size-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {isDropdownOpen && (
-                  <div className="absolute left-0 transition-[opacity,margin] duration min-w-60 bg-white shadow-md rounded-lg mt-10 divide-y divide-gray-200 dark:bg-neutral-800 dark:border dark:border-neutral-700 dark:divide-neutral-700" role="menu" aria-orientation="vertical" aria-labelledby="hs-dropdown-with-dividers">
+                  <div className="absolute left-0 transition-[opacity,margin] duration min-w-60 bg-white shadow-md rounded-lg mt-10 divide-y divide-gray-200 dark:bg-neutral-800 dark:border dark:border-neutral-700 dark:divide-neutral-700 z-50" role="menu" aria-orientation="vertical" aria-labelledby="hs-dropdown-with-dividers">
                     <div className="p-1 space-y-0.5">
                     <a className="flex items-center gap-x-3.5 py-2 px-3 rounded-lg text-sm text-gray-800 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-300 dark:focus:bg-neutral-700" href="#">
                         <RiDashboardLine  className="size-5" />

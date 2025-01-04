@@ -1,8 +1,27 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect } from 'react'
-import axios from 'axios'
 import Cookies from 'js-cookie'
+import api from '../_utils/axiosConfig'
+
+// Create axios instance with base URL
+// const api = axios.create({
+//   baseURL: 'http://localhost:9000/api',
+//   headers: {
+//     'Content-Type': 'application/json'
+//   }
+// });
+
+// Add request interceptor to include token
+// api.interceptors.request.use((config) => {
+//   const token = Cookies.get('token');
+//   if (token) {
+//     config.headers.Authorization = `Bearer ${token}`;
+//   }
+//   return config;
+// }, (error) => {
+//   return Promise.reject(error);
+// });
 
 const UserContext = createContext()
 
@@ -17,6 +36,7 @@ export function UserProvider({ children }) {
   const [userLocation, setUserLocation] = useState('Casablanca, Morocco')
   const [userAbout, setUserAbout] = useState('')
   const [userSkills, setUserSkills] = useState([])
+  const [joinedDate, setJoinedDate] = useState('')
 
   useEffect(() => {
     // First try to load from localStorage
@@ -32,6 +52,8 @@ export function UserProvider({ children }) {
         const storedLocation = localStorage.getItem('userLocation')
         const storedAbout = localStorage.getItem('userAbout')
         const storedSkills = JSON.parse(localStorage.getItem('userSkills') || '[]')
+        const storedJoinedDate = localStorage.getItem('joinedDate')
+
         
         if (storedImage && storedImage !== 'null' && storedImage !== 'undefined' && storedImage !== 'none') {
           setProfileImage(storedImage)
@@ -47,6 +69,35 @@ export function UserProvider({ children }) {
         if (storedLocation && storedLocation !== '') setUserLocation(storedLocation)
         if (storedAbout && storedAbout !== '') setUserAbout(storedAbout)
         if (storedSkills && storedSkills.length > 0) setUserSkills(storedSkills)
+        if (storedJoinedDate) setJoinedDate(storedJoinedDate)
+
+        // After loading from localStorage, try to get fresh data from the server
+        const token = Cookies.get('token')
+        if (token) {
+          api.get('/users/me')
+            .then(response => {
+              if (response.data.state) {
+                const userData = response.data.user
+                if (userData.profileImage) setProfileImage(userData.profileImage)
+                if (userData.bannerImage) setBannerImage(userData.bannerImage)
+                if (userData.fullName) setUserName(userData.fullName)
+                if (userData.email) setUserEmail(userData.email)
+                if (userData.job) setUserJob(userData.job)
+                if (userData.phoneNumber) setUserPhone(userData.phoneNumber)
+                if (userData.languages) setUserLanguages(userData.languages)
+                if (userData.location) setUserLocation(userData.location)
+                if (userData.about) setUserAbout(userData.about)
+                if (userData.skills) setUserSkills(userData.skills)
+                if (userData.joinedDate) {
+                  setJoinedDate(userData.joinedDate)
+                  localStorage.setItem('joinedDate', userData.joinedDate)
+                }
+              }
+            })
+            .catch(error => {
+              console.error('Error fetching user data:', error)
+            })
+        }
       } catch (error) {
         console.error('Error loading from localStorage:', error)
       }
@@ -176,35 +227,23 @@ export function UserProvider({ children }) {
   const updateUserAbout = async (newAbout) => {
     try {
       const token = Cookies.get('token');
-      if (token) {
-        // Update in database
-        const response = await axios.put('/api/users/update-profile', 
-          { about: newAbout },
-          { 
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        
-        if (response.data.state) {
-          // If database update successful, update local state and storage
-          setUserAbout(newAbout);
-          localStorage.setItem('userAbout', newAbout);
-        } else {
-          throw new Error(response.data.message);
-        }
-      } else {
-        // If no token, just update local state and storage
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await api.put('/users/update-profile', {
+        about: newAbout
+      });
+      
+      if (response.data.state) {
         setUserAbout(newAbout);
         localStorage.setItem('userAbout', newAbout);
+      } else {
+        throw new Error(response.data.message);
       }
     } catch (error) {
       console.error('Error updating about:', error);
-      // Still update local state and storage even if database update fails
-      setUserAbout(newAbout);
-      localStorage.setItem('userAbout', newAbout);
+      throw error;
     }
   }
 
@@ -216,13 +255,8 @@ export function UserProvider({ children }) {
         throw new Error('Authentication required')
       }
 
-      const response = await axios.put('/api/users/update-profile', {
+      const response = await api.put('/users/update-profile', {
         skills: newSkills
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
       })
 
       console.log('Server response:', response.data); // Debug log
@@ -241,6 +275,19 @@ export function UserProvider({ children }) {
     }
   }
 
+  const updateUserJoinedDate = (newJoinedDate) => {
+    try {
+      setJoinedDate(newJoinedDate)
+      if (newJoinedDate) {
+        localStorage.setItem('joinedDate', newJoinedDate)
+      } else {
+        localStorage.removeItem('joinedDate')
+      }
+    } catch (error) {
+      console.error('Error updating joined date:', error)
+    }
+  }
+
   const deleteAccount = async () => {
     try {
       const token = Cookies.get('token')
@@ -248,12 +295,7 @@ export function UserProvider({ children }) {
         throw new Error('Authentication required')
       }
 
-      const response = await axios.delete('http://localhost:9000/api/users/delete-account', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
+      const response = await api.delete('/users/delete-account')
 
       if (response.data.state) {
         // Clear all local storage
@@ -271,6 +313,7 @@ export function UserProvider({ children }) {
         setUserLocation('Casablanca, Morocco')
         setUserAbout('')
         setUserSkills([])
+        setJoinedDate('')
         
         // Redirect to login page with correct path
         window.location.href = '/auth/login'
@@ -297,6 +340,7 @@ export function UserProvider({ children }) {
         userLocation,
         userAbout,
         userSkills,
+        joinedDate,
         updateProfileImage,
         updateBannerImage,
         updateUserName,
@@ -307,6 +351,7 @@ export function UserProvider({ children }) {
         updateUserLocation,
         updateUserAbout,
         updateUserSkills,
+        updateUserJoinedDate,
         deleteAccount
       }}
     >

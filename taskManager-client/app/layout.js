@@ -5,6 +5,8 @@ import "./globals.css";
 import { ThemeProvider } from './_context/ThemeContext'
 import { TaskProvider } from './_context/TaskContext'
 import { UserProvider } from './_context/UserContext'
+import { Toaster } from 'react-hot-toast'
+import { SettingsProvider } from './_context/SettingsContext'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,11 +28,14 @@ export default function RootLayout({ children }) {
         suppressHydrationWarning
       >
         <ThemeProvider>
-          <TaskProvider>
-            <UserProvider>
-              {children}
-            </UserProvider>
-          </TaskProvider>
+          <UserProvider>
+            <TaskProvider>
+              <SettingsProvider>
+                <Toaster position="top-center" />
+                {children}
+              </SettingsProvider>
+            </TaskProvider>
+          </UserProvider>
         </ThemeProvider>
       </body>
     </html>

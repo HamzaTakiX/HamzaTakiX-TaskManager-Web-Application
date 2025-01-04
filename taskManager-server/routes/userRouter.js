@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { registerUser, login, sendRecoveryEmail, updateUserImages, updateProfile, deleteAccount, exportUserData, resetPassword, updatePassword, getCurrentUser } from '../controllers/userController.js';
 import { authenticateToken } from '../middleware/auth.js';
+import User from '../models/User.js';
 
 const router = express.Router();
 
@@ -37,5 +38,46 @@ router.put('/update-profile', authenticateToken, updateProfile);
 router.put('/profile/password', authenticateToken, updatePassword);
 router.delete('/delete-account', authenticateToken, deleteAccount);
 router.get('/export-data', authenticateToken, exportUserData);
+
+// Notification settings routes
+router.post('/notification-settings', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const settings = req.body;
+
+    await User.findByIdAndUpdate(userId, {
+      notificationSettings: settings
+    });
+
+    res.json({ 
+      state: true, 
+      message: 'Notification settings updated successfully' 
+    });
+  } catch (error) {
+    console.error('Error saving notification settings:', error);
+    res.status(500).json({ 
+      state: false, 
+      message: 'Error saving notification settings' 
+    });
+  }
+});
+
+router.get('/notification-settings', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+
+    res.json({ 
+      state: true, 
+      settings: user.notificationSettings || {} 
+    });
+  } catch (error) {
+    console.error('Error fetching notification settings:', error);
+    res.status(500).json({ 
+      state: false, 
+      message: 'Error fetching notification settings' 
+    });
+  }
+});
 
 export default router;

@@ -2,7 +2,7 @@ import { createTask, getTasksByUser, getTaskById, updateTask, deleteTask } from 
 
 export const addTask = async (req, res) => {
     try {
-        const taskData = { ...req.body, user: req.user.id };
+        const taskData = { ...req.body, user: req.user.userId };
         const newTask = await createTask(taskData);
         res.status(201).json({ message: 'Task created successfully', task: newTask , 'state' : true});
     } catch (error) {
@@ -12,7 +12,7 @@ export const addTask = async (req, res) => {
 
 export const getTasks = async (req, res) => {
     try {
-        const tasks = await getTasksByUser(req.user.id);
+        const tasks = await getTasksByUser(req.user.userId);
         res.status(200).json(tasks);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching tasks', error, 'state' : false });

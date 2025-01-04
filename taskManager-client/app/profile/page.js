@@ -5,6 +5,7 @@ import ProfileHeader from '../_components/Profile/ProfileHeader'
 import ProfileBody from '../_components/Profile/ProfileBody'
 import Sidebar from '../_components/Shared/Sidebar'
 import { Toaster } from 'react-hot-toast'
+import useNotifications from '@/app/_hooks/useNotifications'
 
 export default function ProfilePage() {
   const [timeFormat, setTimeFormat] = useState('24')
@@ -16,6 +17,84 @@ export default function ProfilePage() {
   
   const languageRef = useRef(null)
   const timezoneRef = useRef(null)
+  const { addNotification } = useNotifications()
+
+  const handleProfileUpdate = (type, success = true) => {
+    const notifications = {
+      language: {
+        title: 'Language Settings Updated',
+        message: `Language has been changed to ${selectedLanguage}`,
+      },
+      timezone: {
+        title: 'Timezone Settings Updated',
+        message: `Timezone has been changed to ${selectedTimezone}`,
+      },
+      timeFormat: {
+        title: 'Time Format Updated',
+        message: `Time format has been changed to ${timeFormat}-hour format`,
+      },
+      password: {
+        title: 'Password Updated',
+        message: 'Your password has been successfully changed',
+      },
+      export: {
+        title: 'Data Export Initiated',
+        message: 'Your data export has started. You will be notified when it\'s ready',
+      },
+      profile: {
+        title: 'Profile Updated',
+        message: 'Your profile information has been successfully updated',
+      }
+    }
+
+    if (success) {
+      addNotification(notifications[type])
+    } else {
+      addNotification({
+        title: 'Update Failed',
+        message: `Failed to update ${type}. Please try again.`,
+        error: true
+      })
+    }
+  }
+
+  const handleSave = (type) => {
+    setShowSuccess(true)
+    handleProfileUpdate(type)
+    setTimeout(() => {
+      setShowSuccess(false)
+    }, 3000)
+  }
+
+  const handleLanguageChange = (language) => {
+    setSelectedLanguage(language)
+    setShowLanguage(false)
+    handleProfileUpdate('language')
+  }
+
+  const handleTimezoneChange = (timezone) => {
+    setSelectedTimezone(timezone)
+    setShowTimezone(false)
+    handleProfileUpdate('timezone')
+  }
+
+  const handleTimeFormatChange = (format) => {
+    setTimeFormat(format)
+    handleProfileUpdate('timeFormat')
+  }
+
+  const handlePasswordChange = (success = true) => {
+    handleProfileUpdate('password', success)
+  }
+
+  const handleExportData = () => {
+    handleProfileUpdate('export')
+    // Add your export logic here
+  }
+
+  const handleProfileInfoUpdate = (success = true) => {
+    handleProfileUpdate('profile', success)
+  }
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -32,13 +111,6 @@ export default function ProfilePage() {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
-
-  const handleSave = () => {
-    setShowSuccess(true)
-    setTimeout(() => {
-      setShowSuccess(false)
-    }, 3000)
-  }
 
   return (
     <div className="flex min-h-screen bg-gray-50/50">
@@ -97,8 +169,7 @@ export default function ProfilePage() {
                     <div className={`absolute w-full py-2 mt-2 bg-white rounded-lg shadow-lg z-10 ${showLanguage ? '' : 'hidden'}`}>
                       <button 
                         onClick={() => {
-                          setSelectedLanguage('English (Default)')
-                          setShowLanguage(false)
+                          handleLanguageChange('English (Default)')
                         }}
                         className="w-full px-4 py-2 text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                       >
@@ -106,8 +177,7 @@ export default function ProfilePage() {
                       </button>
                       <button 
                         onClick={() => {
-                          setSelectedLanguage('Spanish')
-                          setShowLanguage(false)
+                          handleLanguageChange('Spanish')
                         }}
                         className="w-full px-4 py-2 text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                       >
@@ -115,8 +185,7 @@ export default function ProfilePage() {
                       </button>
                       <button 
                         onClick={() => {
-                          setSelectedLanguage('French')
-                          setShowLanguage(false)
+                          handleLanguageChange('French')
                         }}
                         className="w-full px-4 py-2 text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                       >
@@ -152,8 +221,7 @@ export default function ProfilePage() {
                     <div className={`absolute w-full py-2 mt-2 bg-white rounded-lg shadow-lg z-10 ${showTimezone ? '' : 'hidden'}`}>
                       <button 
                         onClick={() => {
-                          setSelectedTimezone('UTC (Default)')
-                          setShowTimezone(false)
+                          handleTimezoneChange('UTC (Default)')
                         }}
                         className="w-full px-4 py-2 text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                       >
@@ -161,8 +229,7 @@ export default function ProfilePage() {
                       </button>
                       <button 
                         onClick={() => {
-                          setSelectedTimezone('EST (UTC-5)')
-                          setShowTimezone(false)
+                          handleTimezoneChange('EST (UTC-5)')
                         }}
                         className="w-full px-4 py-2 text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                       >
@@ -170,8 +237,7 @@ export default function ProfilePage() {
                       </button>
                       <button 
                         onClick={() => {
-                          setSelectedTimezone('PST (UTC-8)')
-                          setShowTimezone(false)
+                          handleTimezoneChange('PST (UTC-8)')
                         }}
                         className="w-full px-4 py-2 text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                       >
@@ -179,8 +245,7 @@ export default function ProfilePage() {
                       </button>
                       <button 
                         onClick={() => {
-                          setSelectedTimezone('CET (UTC+1)')
-                          setShowTimezone(false)
+                          handleTimezoneChange('CET (UTC+1)')
                         }}
                         className="w-full px-4 py-2 text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                       >
@@ -195,7 +260,9 @@ export default function ProfilePage() {
                 <h2 className="text-[15px] font-medium text-gray-700 mb-3">Time Format</h2>
                 <div className="flex space-x-3">
                   <button
-                    onClick={() => setTimeFormat('24')}
+                    onClick={() => {
+                      handleTimeFormatChange('24')
+                    }}
                     className={`h-12 px-6 text-[15px] rounded-full transition-all ${
                       timeFormat === '24'
                       ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-sm'
@@ -205,7 +272,9 @@ export default function ProfilePage() {
                     24 Hours
                   </button>
                   <button
-                    onClick={() => setTimeFormat('12')}
+                    onClick={() => {
+                      handleTimeFormatChange('12')
+                    }}
                     className={`h-12 px-6 text-[15px] rounded-full transition-all ${
                       timeFormat === '12'
                       ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-sm'
@@ -219,7 +288,9 @@ export default function ProfilePage() {
 
               <div className="pt-4">
                 <button 
-                  onClick={handleSave}
+                  onClick={() => {
+                    handleSave('profile')
+                  }}
                   className="h-11 px-5 bg-blue-600 text-white text-[15px] font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 >
                   Save Changes

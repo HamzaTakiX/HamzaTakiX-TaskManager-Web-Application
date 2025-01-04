@@ -8,6 +8,9 @@ import NotificationDropdown from '../Shared/NotificationDropdown'
 import ProfileDropdown from '../ProfileDropdown'
 import { motion } from 'framer-motion'
 import { useUser } from '@/app/_context/UserContext'
+import { useSettings } from '@/app/_context/SettingsContext'
+import { translations } from '@/app/_utils/translations'
+import useNotifications from '@/app/_hooks/useNotifications'
 import Image from 'next/image'
 
 export default function SettingsHeader({ showSuccess, headerOnly, contentOnly }) {
@@ -17,8 +20,25 @@ export default function SettingsHeader({ showSuccess, headerOnly, contentOnly })
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [userName, setUserName] = useState('')
   const { profileImage } = useUser()
+  const { settings } = useSettings()
   const [showTooltip, setShowTooltip] = useState(false)
   const [activeTab, setActiveTab] = useState(pathname)
+  const { notifications, fetchNotifications } = useNotifications()
+  const unreadCount = notifications.filter(n => !n.read).length
+
+  // Get translations
+  const t = translations[settings.language].settingsHeader
+
+  // Fetch notifications on mount and set up periodic refresh
+  useEffect(() => {
+    fetchNotifications(); // Initial fetch
+
+    const refreshInterval = setInterval(() => {
+      fetchNotifications();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, [fetchNotifications]);
 
   useEffect(() => {
     const storedName = localStorage.getItem('userName')
@@ -45,8 +65,8 @@ export default function SettingsHeader({ showSuccess, headerOnly, contentOnly })
   }
 
   const tabs = [
-    { name: 'General', href: '/settings' },
-    { name: 'Notification', href: '/settings/notification' }
+    { name: t.general, href: '/settings' },
+    { name: t.notification, href: '/settings/notification' }
   ]
 
   // Header elements (notification and profile)
@@ -58,9 +78,12 @@ export default function SettingsHeader({ showSuccess, headerOnly, contentOnly })
           whileTap={{ scale: 0.95 }}
           onClick={handleNotifClick}
           className="p-2 text-gray-500 hover:text-gray-700 focus:outline-none"
+          aria-label={t.notifications}
         >
           <FiBell className="h-5 w-5" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full"></span>
+          {unreadCount > 0 && (
+            <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full"></span>
+          )}
         </motion.button>
         <NotificationDropdown 
           isOpen={isNotifOpen} 
@@ -75,12 +98,13 @@ export default function SettingsHeader({ showSuccess, headerOnly, contentOnly })
           onMouseEnter={() => setShowTooltip(true)}
           onMouseLeave={() => setShowTooltip(false)}
           className="flex items-center focus:outline-none relative"
+          aria-label={t.profile}
         >
           <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-200">
             {profileImage ? (
               <Image
                 src={`http://localhost:9000${profileImage}`}
-                alt="Profile"
+                alt={t.profile}
                 width={40}
                 height={40}
                 className="object-cover w-full h-full"
@@ -105,6 +129,10 @@ export default function SettingsHeader({ showSuccess, headerOnly, contentOnly })
     </div>
   )
 
+  if (headerOnly) {
+    return headerElements
+  }
+
   // Content elements (success message and tabs)
   const contentElements = (
     <>
@@ -113,10 +141,10 @@ export default function SettingsHeader({ showSuccess, headerOnly, contentOnly })
           <FiSettings className="h-12 w-12 text-blue-600 animate-spin-slow -mt-1" />
           <div>
             <h1 className="text-3xl sm:text-4xl font-bold text-blue-600">
-              Settings
+              {t.settings}
             </h1>
             <p className="mt-3 text-sm text-gray-500 font-medium">
-              Customize your workspace and preferences
+              {t.customizeWorkspace}
             </p>
           </div>
         </div>
@@ -135,7 +163,7 @@ export default function SettingsHeader({ showSuccess, headerOnly, contentOnly })
               clipRule="evenodd" 
             />
           </svg>
-          Settings saved successfully!
+          {translations[settings.language].settings.saved}
         </div>
       )}
       {/* Tabs */}
@@ -158,10 +186,6 @@ export default function SettingsHeader({ showSuccess, headerOnly, contentOnly })
       </nav>
     </>
   )
-
-  if (headerOnly) {
-    return headerElements
-  }
 
   if (contentOnly) {
     return contentElements

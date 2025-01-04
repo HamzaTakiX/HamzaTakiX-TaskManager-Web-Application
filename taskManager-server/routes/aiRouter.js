@@ -3,16 +3,13 @@ import * as conversationController from '../controllers/conversationController.j
 import { authenticateToken } from '../middleware/auth.js';
 const router = express.Router();
 
-router.post('/ask', authenticateToken , conversationController.addMessageToConversation);
-
-router.post('/new', authenticateToken , conversationController.createConversation);
-
-router.get('/conv', authenticateToken , conversationController.getConversationsByUser);
-
-router.get('/conv/:id', authenticateToken ,  conversationController.getConversationById);
-
-router.put('/:id', authenticateToken , conversationController.updateConversationTitle);
-
-router.delete('/:id', authenticateToken , conversationController.deleteConversation);
+// Conversation routes
+router.post('/conv/ask', authenticateToken, conversationController.addMessageToConversation);
+router.post('/conv/new', authenticateToken, conversationController.createConversation);
+router.get('/conv', authenticateToken, conversationController.getConversationsByUser);
+router.get('/conv/:id', authenticateToken, conversationController.getConversationById);
+router.put('/conv/:id', authenticateToken, conversationController.updateConversationTitle);
+router.put('/conv/:id/favorite', authenticateToken, conversationController.toggleFavorite);
+router.delete('/conv/:id', authenticateToken, conversationController.deleteConversation);
 
 export default router;

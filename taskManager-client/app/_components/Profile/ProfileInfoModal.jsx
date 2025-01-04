@@ -4,11 +4,13 @@ import { motion } from 'framer-motion'
 import { FiX, FiUser, FiGlobe, FiMessageCircle, FiPhone, FiMail, FiSave } from 'react-icons/fi'
 import { useState, useEffect } from 'react'
 import { useUser } from '@/app/_context/UserContext'
+import useNotifications from '@/app/_hooks/useNotifications'
 import axios from 'axios'
 import Cookies from 'js-cookie'
 
 export default function ProfileInfoModal({ isOpen, onClose, initialData, onSave }) {
   const { updateUserName, updateUserEmail, updateUserPhone, updateUserLanguages, updateUserLocation } = useUser()
+  const { addNotification } = useNotifications()
   const [formData, setFormData] = useState(() => {
     // Initialize form data with proper handling of empty/none values
     const data = {
@@ -116,6 +118,14 @@ export default function ProfileInfoModal({ isOpen, onClose, initialData, onSave 
         updateUserLanguages(user.languages);
         updateUserPhone(user.phoneNumber);
         updateUserEmail(user.email);
+
+        // Add notification for successful profile update
+        addNotification({
+          title: 'Profile Updated',
+          message: 'Profile information updated successfully',
+          type: 'success',
+          timestamp: new Date().toISOString()
+        });
 
         onSave({
           fullName: user.fullName,

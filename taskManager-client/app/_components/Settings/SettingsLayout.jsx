@@ -6,9 +6,17 @@ import Link from 'next/link'
 import Sidebar from '../Shared/Sidebar'
 import SettingsHeader from './SettingsHeader'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useSettings } from '@/app/_context/SettingsContext'
+import { translations } from '@/app/_utils/translations'
 
 export default function SettingsLayout({ children, showSuccess }) {
   const pathname = usePathname()
+  const { settings } = useSettings()
+  
+  // Get translations based on current page
+  const t = pathname.includes('/notification') 
+    ? translations[settings.language].notificationSettings 
+    : translations[settings.language].settings
 
   return (
     <div className="flex min-h-screen">
@@ -59,7 +67,7 @@ export default function SettingsLayout({ children, showSuccess }) {
                   clipRule="evenodd" 
                 />
               </svg>
-              Settings saved successfully!
+              {t.saveSuccess}
             </motion.div>
           )}
         </AnimatePresence>

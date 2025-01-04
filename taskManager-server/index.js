@@ -5,10 +5,12 @@ import dotenv from 'dotenv';
 import userRouter from './routes/userRouter.js';
 import taskRouter from './routes/taskRouter.js';
 import aiRouter from './routes/aiRouter.js';
+import notificationRouter from './routes/notificationRouter.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import User from './models/User.js';
 import fs from 'fs';
+import './models/notification.model.js';  // Import notification model
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,9 +19,10 @@ const app = express();
 
 // Server configuration
 app.use(cors({
-    origin: ['http://localhost:3000'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
+    origin: true, // Allow all origins in development
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -39,10 +42,18 @@ const bannersDir = path.join(uploadsDir, 'banners');
 // Serve static files from uploads directory
 app.use('/uploads', express.static(uploadsDir));
 
+// Middleware for logging requests
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  console.log('Request headers:', req.headers);
+  next();
+});
+
 // Route for API - Move routes before MongoDB connection
 app.use('/api/users', userRouter);
 app.use('/api/tasks', taskRouter);
 app.use('/api/ai', aiRouter);
+app.use('/api/notifications', notificationRouter);
 
 const port = process.env.PORT || 9000;
 const mongoUri = 'mongodb://127.0.0.1:27017/task-management';
@@ -68,9 +79,9 @@ app.listen(port, () => {
                 console.log('No users found in database');
             }
         } catch (error) {
-            console.error('Error querying users:', error);
+            console.error('Error querying users:', error.message, error.stack);
         }
     }).catch((error) => {
-        console.error('Error connecting to MongoDB:', error);
+        console.error('Error connecting to MongoDB:', error.message, error.stack);
     });
 });

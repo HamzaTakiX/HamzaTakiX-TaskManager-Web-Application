@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import { format } from 'date-fns'
 import axios from 'axios'
 import { useUser } from '../../_context/UserContext'
+import useNotifications from '@/app/_hooks/useNotifications'
 
 export default function ProfileHeader() {
   const { 
@@ -16,6 +17,7 @@ export default function ProfileHeader() {
     userEmail,
     userJob,
     userLocation,
+    joinedDate,
     updateProfileImage, 
     updateBannerImage,
     updateUserEmail,
@@ -23,7 +25,8 @@ export default function ProfileHeader() {
     updateUserName,
     updateUserLocation
   } = useUser()
-  const [joinedDate, setJoinedDate] = useState(null)
+  
+  const { addNotification } = useNotifications()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showBannerMenu, setShowBannerMenu] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -36,74 +39,6 @@ export default function ProfileHeader() {
   const bannerInputRef = useRef(null)
   const profileMenuRef = useRef(null)
   const bannerMenuRef = useRef(null)
-
-  useEffect(() => {
-    console.log('Current user image data:', { profileImage, bannerImage });
-    
-    // Only set new values if they exist and are not 'none'
-    if (profileImage && profileImage !== 'none') {
-      localStorage.setItem('profileImage', profileImage);
-      console.log('Setting profileImage in localStorage:', profileImage);
-    } else {
-      localStorage.removeItem('profileImage');
-      console.log('Removing profileImage from localStorage');
-    }
-    
-    if (bannerImage && bannerImage !== 'none') {
-      localStorage.setItem('bannerImage', bannerImage);
-      console.log('Setting bannerImage in localStorage:', bannerImage);
-    } else {
-      localStorage.removeItem('bannerImage');
-      console.log('Removing bannerImage from localStorage');
-    }
-
-    // Log localStorage values
-    console.log('LocalStorage Image Values:');
-    console.log('localStorage profileImage:', localStorage.getItem('profileImage'));
-    console.log('localStorage bannerImage:', localStorage.getItem('bannerImage'));
-
-    // Log frontend display status
-    console.log('Frontend Image Display Status:');
-    console.log('profileImage displaying:', !!(profileImage && profileImage !== 'none'));
-    console.log('bannerImage displaying:', !!(bannerImage && bannerImage !== 'none'));
-  }, [profileImage, bannerImage])
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = localStorage.getItem('token')
-        if (!token) return
-
-        const response = await axios.get('http://localhost:9000/api/users/me', {
-          headers: { 
-            Authorization: `Bearer ${token}` 
-          }
-        })
-
-        if (response.data.state) {
-          const userData = response.data.user
-          updateUserLocation(userData.location || 'Casablanca, Morocco')
-          setJoinedDate(userData.joinedDate || new Date().toISOString())
-          
-          // Store in localStorage
-          localStorage.setItem('userLocation', userData.location || 'Casablanca, Morocco')
-          localStorage.setItem('userJoinedDate', userData.joinedDate || new Date().toISOString())
-
-          // Update images if they exist
-          if (userData.profileImage) {
-            updateProfileImage(userData.profileImage)
-          }
-          if (userData.bannerImage) {
-            updateBannerImage(userData.bannerImage)
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error)
-      }
-    }
-
-    fetchUserData()
-  }, [])
 
   useEffect(() => {
     const storedName = localStorage.getItem('userName')
@@ -170,12 +105,27 @@ export default function ProfileHeader() {
         localStorage.setItem('bannerImage', response.data.user.bannerImage)
         setShowBannerMenu(false)
         showNotificationMessage('Banner image updated successfully', 'success')
+        addNotification({
+          title: 'Banner Image Updated',
+          message: 'Your banner image has been successfully updated',
+          type: 'success'
+        })
       } else {
         showNotificationMessage(response.data.message || 'Failed to upload banner image', 'error')
+        addNotification({
+          title: 'Banner Update Failed',
+          message: 'Failed to update your banner image. Please try again.',
+          type: 'error'
+        })
       }
     } catch (error) {
       console.error('Error uploading banner image:', error)
       showNotificationMessage('Failed to upload banner image. Please try again.', 'error')
+      addNotification({
+        title: 'Banner Update Failed',
+        message: 'Failed to update your banner image. Please try again.',
+        type: 'error'
+      })
     } finally {
       setIsUploading(false)
     }
@@ -199,12 +149,27 @@ export default function ProfileHeader() {
         localStorage.removeItem('bannerImage')
         setShowBannerMenu(false)
         showNotificationMessage('Banner image removed successfully', 'success')
+        addNotification({
+          title: 'Banner Image Removed',
+          message: 'Your banner image has been successfully removed',
+          type: 'success'
+        })
       } else {
         showNotificationMessage(response.data.message || 'Failed to remove banner image', 'error')
+        addNotification({
+          title: 'Banner Remove Failed',
+          message: 'Failed to remove your banner image. Please try again.',
+          type: 'error'
+        })
       }
     } catch (error) {
       console.error('Error removing banner image:', error)
       showNotificationMessage('Failed to remove banner image. Please try again.', 'error')
+      addNotification({
+        title: 'Banner Remove Failed',
+        message: 'Failed to remove your banner image. Please try again.',
+        type: 'error'
+      })
     }
   }
 
@@ -228,12 +193,27 @@ export default function ProfileHeader() {
         updateProfileImage(response.data.user.profileImage)
         setShowProfileMenu(false)
         showNotificationMessage('Profile image updated successfully', 'success')
+        addNotification({
+          title: 'Profile Picture Updated',
+          message: 'Your profile picture has been successfully updated',
+          type: 'profile'
+        })
       } else {
         showNotificationMessage(response.data.message || 'Failed to upload profile image', 'error')
+        addNotification({
+          title: 'Profile Picture Update Failed',
+          message: 'Failed to update your profile picture. Please try again.',
+          type: 'error'
+        })
       }
     } catch (error) {
       console.error('Error uploading profile image:', error)
       showNotificationMessage('Failed to upload profile image. Please try again.', 'error')
+      addNotification({
+        title: 'Profile Picture Update Failed',
+        message: 'Failed to update your profile picture. Please try again.',
+        type: 'error'
+      })
     }
   }
 
@@ -255,12 +235,27 @@ export default function ProfileHeader() {
         updateProfileImage(null)
         setShowProfileMenu(false)
         showNotificationMessage('Profile image removed successfully', 'success')
+        addNotification({
+          title: 'Profile Picture Removed',
+          message: 'Your profile picture has been successfully removed',
+          type: 'profile'
+        })
       } else {
         showNotificationMessage(response.data.message || 'Failed to remove profile image', 'error')
+        addNotification({
+          title: 'Profile Picture Remove Failed',
+          message: 'Failed to remove your profile picture. Please try again.',
+          type: 'error'
+        })
       }
     } catch (error) {
       console.error('Error removing profile image:', error)
       showNotificationMessage('Failed to remove profile image. Please try again.', 'error')
+      addNotification({
+        title: 'Profile Picture Remove Failed',
+        message: 'Failed to remove your profile picture. Please try again.',
+        type: 'error'
+      })
     }
   }
 
@@ -272,7 +267,9 @@ export default function ProfileHeader() {
           className={`fixed top-4 right-4 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg z-50 ${
             notificationType === 'success' 
               ? 'bg-green-50 text-green-600' 
-              : 'bg-red-50 text-red-600'
+              : notificationType === 'profile' 
+                ? 'bg-purple-50 text-purple-600' 
+                : 'bg-red-50 text-red-600'
           }`}
           style={{
             animation: 'slideIn 0.5s ease-out forwards',
@@ -280,6 +277,8 @@ export default function ProfileHeader() {
         >
           {notificationType === 'success' ? (
             <FiCheckCircle className="w-5 h-5" />
+          ) : notificationType === 'profile' ? (
+            <FiUser className="w-5 h-5" />
           ) : (
             <FiAlertCircle className="w-5 h-5" />
           )}
@@ -395,7 +394,7 @@ export default function ProfileHeader() {
                   </div>
                 )}
               </motion.div>
-              
+
               {/* Profile Image Menu */}
               <div className="absolute bottom-0 right-0">
                 {profileImage && profileImage !== 'none' ? (
@@ -510,7 +509,7 @@ export default function ProfileHeader() {
                       {joinedDate && (
                         <div className="flex items-center gap-2">
                           <FiCalendar className="w-4 h-4" />
-                          <span>Joined {format(joinedDate, 'MMMM yyyy')}</span>
+                          <span>Joined {format(new Date(joinedDate), 'do MMMM yyyy')}</span>
                         </div>
                       )}
                     </div>
@@ -521,6 +520,7 @@ export default function ProfileHeader() {
           </div>
         </div>
       </div>
+
       <style jsx>{`
         @keyframes slideIn {
           from {

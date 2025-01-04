@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
-import axios from "axios";
+import axios from '../../_utils/axiosConfig';
 import Cookies from 'js-cookie';
 import { useUser } from '../../_context/UserContext';
 
@@ -26,7 +26,7 @@ function Login() {
       setIsLoading(true);
       setErrorMessage("");
       
-      const response = await axios.post("http://localhost:9000/api/users/login", {
+      const response = await axios.post("/users/login", {
         email: data.email,
         password: data.password
       });
@@ -43,19 +43,22 @@ function Login() {
           // Clear any existing welcome state
           localStorage.removeItem('hasShownWelcome');
           
-          // Dispatch custom event for user change
-          const userChangeEvent = new Event('userChanged');
-          window.dispatchEvent(userChangeEvent);
-          
-          // Update both localStorage and context
+          // Store token in both localStorage and cookies
           localStorage.setItem('token', response.data.token);
+          Cookies.set('token', response.data.token, { 
+            expires: 7,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Lax'
+          });
+          
+          // Store user data
           localStorage.setItem('userName', formattedName);
           localStorage.setItem('userEmail', response.data.user.email);
           localStorage.setItem('userJob', response.data.user.job);
           localStorage.setItem('userLocation', response.data.user.location || 'Casablanca, Morocco');
-          localStorage.setItem('userJoinedDate', response.data.user.joinedDate || new Date().toISOString());
+          localStorage.setItem('joinedDate', response.data.user.joinedDate || new Date().toISOString());
           
-          // Set profile and banner images
+          // Handle profile and banner images
           if (response.data.user.profileImage && response.data.user.profileImage !== 'none') {
             localStorage.setItem('profileImage', response.data.user.profileImage);
           } else {
@@ -67,22 +70,14 @@ function Login() {
           } else {
             localStorage.removeItem('bannerImage');
           }
-          
-          Cookies.set('token', response.data.token, { expires: 7 });
 
-          // Update context immediately
+          // Update context
           updateUserName(formattedName);
           updateUserEmail(response.data.user.email);
           updateUserJob(response.data.user.job);
           updateUserLocation(response.data.user.location || 'Casablanca, Morocco');
           updateProfileImage(response.data.user.profileImage);
           updateBannerImage(response.data.user.bannerImage);
-
-          // Debug log
-          console.log('Login successful, user data:', {
-            profileImage: response.data.user.profileImage,
-            bannerImage: response.data.user.bannerImage
-          });
 
           // Redirect after context is updated
           router.replace('/overview?welcome=true');
@@ -92,7 +87,11 @@ function Login() {
       }
     } catch (error) {
       console.error("Login error:", error);
-      setErrorMessage(error.response?.data?.message || "An error occurred during login");
+      setErrorMessage(
+        error.message || 
+        error.response?.data?.message || 
+        "An error occurred during login"
+      );
     } finally {
       setIsLoading(false);
     }

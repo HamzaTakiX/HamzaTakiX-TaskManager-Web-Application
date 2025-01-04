@@ -16,6 +16,7 @@ module.exports = {
         'draw': 'draw 1s ease-out forwards',
         'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'spin-slow': 'spin 8s linear infinite',
+        'shimmer': 'shimmer 2s infinite',
       },
       keyframes: {
         fadeIn: {
@@ -36,6 +37,11 @@ module.exports = {
           '0%': { strokeDashoffset: '100' },
           '100%': { strokeDashoffset: '0' },
         },
+        shimmer: {
+          '100%': {
+            transform: 'translateX(100%)',
+          },
+        },
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
@@ -52,4 +58,3 @@ module.exports = {
   },
   plugins: [],
 }
-

@@ -5,6 +5,13 @@ import { createPortal } from 'react-dom';
 const DeleteCardModal = ({ task, onClose, onConfirm }) => {
   if (!task) return null;
 
+  // Function to truncate and format the task title
+  const formatTaskTitle = (title) => {
+    if (!title) return 'Untitled Task';
+    if (title.length <= 40) return title;
+    return `${title.substring(0, 37)}...`;
+  };
+
   const modalContent = (
     <motion.div
       initial={{ opacity: 0 }}
@@ -42,8 +49,12 @@ const DeleteCardModal = ({ task, onClose, onConfirm }) => {
             Are you sure you want to delete this task? This action cannot be undone.
           </p>
           <div className="text-gray-800 bg-gray-50 rounded-lg p-4 mb-6">
-            <h3 className="font-medium mb-2">{task.title}</h3>
-            <p className="text-sm text-gray-600 line-clamp-2">{task.description || 'No description provided'}</p>
+            <h3 className="font-medium mb-2 truncate hover:text-clip hover:whitespace-normal" title={task.title}>
+              {formatTaskTitle(task.title)}
+            </h3>
+            <p className="text-sm text-gray-600 line-clamp-2 hover:line-clamp-none break-words" title={task.description}>
+              {task.description || 'No description provided'}
+            </p>
           </div>
         </div>
 
@@ -57,7 +68,7 @@ const DeleteCardModal = ({ task, onClose, onConfirm }) => {
           </button>
           <button
             onClick={() => {
-              onConfirm(task.id, task.status);
+              onConfirm(task._id, task.status);
               onClose();
             }}
             className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-md transition-colors"

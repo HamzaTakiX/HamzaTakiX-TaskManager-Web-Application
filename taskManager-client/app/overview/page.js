@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect } from 'react';
 import TaskBoard from '../_components/Overview/TaskBoard';
 import OverviewMenu from '../_components/Shared/OverviewMenu';
 import TaskHeader from '../_components/Overview/TaskHeader';
-import TaskFilters from '../_components/Shared/TaskFilters';
 import Sidebar from '../_components/Shared/Sidebar';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Toaster } from 'react-hot-toast';
@@ -102,8 +101,7 @@ export default function Overview() {
         <Sidebar />
         <div className="pl-64">
           <OverviewMenu />
-          <TaskHeader />
-          <TaskFilters onSearch={setSearchQuery} searchQuery={searchQuery} onClearSearch={handleClearSearch} />
+          <TaskHeader onSearch={setSearchQuery} searchQuery={searchQuery} onClearSearch={handleClearSearch} />
           <main className="p-6">
             <div className="max-w-7xl mx-auto">
               <TaskBoard tasks={tasks} searchQuery={searchQuery} onClearSearch={handleClearSearch} />
