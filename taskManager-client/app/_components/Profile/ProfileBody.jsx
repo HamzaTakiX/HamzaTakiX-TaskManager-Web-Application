@@ -2,18 +2,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion'
 import { 
-  FiEdit2, FiClock, FiCheckCircle, 
+  FiEdit2, FiCheckCircle, 
   FiAlertCircle, FiBarChart2, FiPlus, FiTrash2,
   FiCheck, FiTrash, FiEdit3, FiCalendar, FiFlag, FiUser, FiPhone, FiMail,
   FiFolder, FiStar, FiChevronDown, FiFilter, FiSettings, FiCheckSquare, FiList, FiMapPin, FiPieChart, FiTrendingUp,
-  FiActivity, FiX, FiSave, FiAward, FiChevronRight, FiBriefcase, FiCommand, FiGrid, FiLock, FiKey, FiEye, FiEyeOff
+  FiActivity, FiX, FiSave, FiAward, FiChevronRight, FiBriefcase, FiCommand, FiGrid, FiLock, FiKey, FiEye, FiEyeOff,
+  FiCode, FiPenTool, FiTrendingUp as FiTrendingUpIcon, FiSearch, FiType, FiClock, FiArrowRight
 } from 'react-icons/fi'
 import { useUser } from '@/app/_context/UserContext'
-import ActivityModal from './ActivityModal'
 import ProfileInfoModal from './ProfileInfoModal'
-import CategoryModal from './CategoryModal'
 import SkillModal from './SkillModal'
-import HistorySection from './HistorySection'
 import SuccessAlert from '../Notifications/SuccessAlert'
 import AboutModal from './AboutModal'
 import DeleteAccountModal from './DeleteAccountModal'
@@ -41,7 +39,6 @@ export default function ProfileBody() {
     updateUserLocation 
   } = useUser()
   const [activeTab, setActiveTab] = useState('overview')
-  const [isActivityModalOpen, setIsActivityModalOpen] = useState(false)
   const [isEditingAbout, setIsEditingAbout] = useState(false)
   const [editedDescription, setEditedDescription] = useState(userAbout || '')
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false)
@@ -188,8 +185,8 @@ export default function ProfileBody() {
   const validateSkill = (skill) => {
     // Check if skill already exists
     if (userSkills.includes(skill.trim())) {
-      setAlertMessage('This skill already exists')
       setAlertType('error')
+      setAlertMessage('This skill already exists')
       setShowAlert(true)
       setTimeout(() => setShowAlert(false), 3000)
       return false
@@ -197,8 +194,8 @@ export default function ProfileBody() {
 
     // Check skill length (max 20 characters)
     if (skill.trim().length > 20) {
-      setAlertMessage('Skill name must be less than 20 characters')
       setAlertType('error')
+      setAlertMessage('Skill name must be less than 20 characters')
       setShowAlert(true)
       setTimeout(() => setShowAlert(false), 3000)
       return false
@@ -239,7 +236,6 @@ export default function ProfileBody() {
       if (response.data.state) {
         updateUserSkills([...userSkills, trimmedSkill])
         setNewSkill('')
-        addActivity('update', 'Skills', `Added ${trimmedSkill} to skills`)
         setShowSuccess(true)
         setTimeout(() => {
           setShowSuccess(false)
@@ -261,7 +257,6 @@ export default function ProfileBody() {
     try {
       const updatedSkills = userSkills.filter(skill => skill !== skillToRemove)
       await updateUserSkills(updatedSkills)
-      addActivity('update', 'Skills', `Removed ${skillToRemove} from skills`)
       setShowSuccess(true)
       setTimeout(() => {
         setShowSuccess(false)
@@ -301,54 +296,6 @@ export default function ProfileBody() {
 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
 
-  const [activities, setActivities] = useState([
-    {
-      id: 1,
-      type: 'complete',
-      taskTitle: 'User Authentication',
-      timestamp: '2024-01-02T10:30:00',
-      icon: FiCheck,
-      color: 'text-green-500'
-    },
-    {
-      id: 2,
-      type: 'update',
-      taskTitle: 'API Integration',
-      details: 'Updated progress to 65%',
-      timestamp: '2024-01-02T09:15:00',
-      icon: FiEdit3,
-      color: 'text-blue-500'
-    },
-    {
-      id: 3,
-      type: 'create',
-      taskTitle: 'Design Dashboard Layout',
-      timestamp: '2024-01-01T16:45:00',
-      icon: FiPlus,
-      color: 'text-purple-500'
-    },
-    {
-      id: 4,
-      type: 'priority',
-      taskTitle: 'API Integration',
-      details: 'Changed priority to High',
-      timestamp: '2024-01-01T14:20:00',
-      icon: FiFlag,
-      color: 'text-orange-500'
-    },
-    {
-      id: 5,
-      type: 'deadline',
-      taskTitle: 'User Authentication',
-      details: 'Changed due date to Jan 15',
-      timestamp: '2024-01-01T11:10:00',
-      icon: FiCalendar,
-      color: 'text-indigo-500'
-    }
-  ])
-
-  const [activeTimeFilter, setActiveTimeFilter] = useState('today')
-
   const [emailPreferences, setEmailPreferences] = useState({
     activityNotifications: false,
     taskUpdates: false,
@@ -363,7 +310,95 @@ export default function ProfileBody() {
     content: { count: 7, total: 10, color: '#06B6D4' }      // Cyan
   })
 
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+  // Add state for favorite tasks
+  const [favoriteTasks, setFavoriteTasks] = useState([]);
+  const [isLoadingFavorites, setIsLoadingFavorites] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredFavoriteTasks, setFilteredFavoriteTasks] = useState([]);
+
+  // Add function to fetch favorite tasks
+  const fetchFavoriteTasks = async () => {
+    try {
+      const token = Cookies.get('token');
+      if (!token) throw new Error('Authentication required');
+
+      const response = await axios.get('http://localhost:9000/api/tasks', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (Array.isArray(response.data)) {
+        const favorites = response.data.filter(task => task.favorite === true);
+        setFavoriteTasks(favorites);
+      }
+    } catch (error) {
+      console.error('Error fetching favorite tasks:', error);
+      setAlertType('error');
+      setAlertMessage('Failed to load favorite tasks');
+      setShowAlert(true);
+    } finally {
+      setIsLoadingFavorites(false);
+    }
+  };
+
+  // Add useEffect to fetch favorite tasks when the favorites tab is active
+  useEffect(() => {
+    if (activeTab === 'favorites') {
+      fetchFavoriteTasks();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (favoriteTasks.length > 0) {
+      const filtered = favoriteTasks.filter(task => 
+        task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+      setFilteredFavoriteTasks(filtered);
+    } else {
+      setFilteredFavoriteTasks([]);
+    }
+  }, [searchQuery, favoriteTasks]);
+
+  // Add toggle favorite function
+  const toggleFavorite = async (taskId, currentFavorite) => {
+    try {
+      console.log('Toggling favorite for task:', taskId, 'Current favorite:', currentFavorite);
+      
+      const response = await axios.put(`http://localhost:9000/api/tasks/${taskId}`, {
+        favorite: !currentFavorite
+      }, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.status === 200) {
+        // Update the tasks list with the new favorite status
+        const updatedTasks = tasks.map(task => 
+          task._id === taskId ? { ...task, favorite: !currentFavorite } : task
+        );
+        setTasks(updatedTasks);
+
+        // Update favorite tasks list
+        const updatedFavoriteTasks = currentFavorite
+          ? favoriteTasks.filter(task => task._id !== taskId)
+          : [...favoriteTasks, updatedTasks.find(task => task._id === taskId)];
+        setFavoriteTasks(updatedFavoriteTasks);
+
+        // Show success message
+        setAlertType('success');
+        setAlertMessage(currentFavorite ? 'Task removed from favorites' : 'Task added to favorites');
+        setShowAlert(true);
+        setTimeout(() => setShowAlert(false), 3000);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      setAlertType('error');
+      setAlertMessage('Failed to update favorite status');
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+    }
+  };
 
   const platformDropdownRef = useRef(null)
 
@@ -382,13 +417,13 @@ export default function ProfileBody() {
   useEffect(() => {
     setProfileInfo(prev => ({
       ...prev,
-      fullName: userName || '',
-      country: userLocation || '',
+      fullName: userName || 'John Doe',
+      country: userLocation || 'Casablanca, Morocco',
       languages: userLanguages || '',
       phone: userPhone || '',
-      email: userEmail || ''
+      email: userEmail || 'john.doe@example.com'
     }))
-  }, [userName, userEmail, userPhone, userLanguages, userLocation])
+  }, [userName, userLocation, userLanguages, userPhone, userEmail])
 
   const handleSaveDescription = async () => {
     try {
@@ -410,8 +445,6 @@ export default function ProfileBody() {
       if (response.data.state) {
         setIsEditingAbout(false)
         updateUserAbout(editedDescription)
-        // Add to activity feed
-        addActivity('update', 'Profile Description', 'Updated about section')
         // Show success message
         setAlertType('success')
         setAlertMessage('Profile updated successfully!')
@@ -433,124 +466,13 @@ export default function ProfileBody() {
     }
   }
 
-  const addActivity = (type, taskTitle, details = '') => {
-    const newActivity = {
-      id: Date.now(),
-      type,
-      taskTitle,
-      details,
-      timestamp: new Date().toISOString(),
-      icon: type === 'complete' ? FiCheck :
-            type === 'update' ? FiEdit3 :
-            type === 'create' ? FiPlus :
-            type === 'priority' ? FiFlag :
-            type === 'deadline' ? FiCalendar :
-            FiActivity,
-      color: type === 'complete' ? 'text-green-500' :
-             type === 'update' ? 'text-blue-500' :
-             type === 'create' ? 'text-purple-500' :
-             type === 'priority' ? 'text-orange-500' :
-             type === 'deadline' ? 'text-indigo-500' :
-             'text-gray-500'
-    }
-    activities.unshift(newActivity)
-  }
-
   const handleSaveProfileInfo = (newInfo) => {
     setProfileInfo(newInfo)
-    addActivity('update', 'Profile Information', 'Updated profile information')
     setShowSuccess(true)
     // Auto-hide success message after 3 seconds
     setTimeout(() => {
       setShowSuccess(false)
     }, 3000)
-  }
-
-  const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp)
-    const now = new Date()
-    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60))
-    
-    if (diffInHours < 24) {
-      if (diffInHours < 1) {
-        const diffInMinutes = Math.floor((now - date) / (1000 * 60))
-        return `${diffInMinutes} minutes ago`
-      }
-      return `${diffInHours} hours ago`
-    }
-    
-    if (diffInHours < 48) {
-      return 'Yesterday'
-    }
-    
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric'
-    })
-  }
-
-  const getActivityMessage = (activity) => {
-    switch (activity.type) {
-      case 'complete':
-        return `Completed task "${activity.taskTitle}"`
-      case 'update':
-        return `Updated task "${activity.taskTitle}"`
-      case 'create':
-        return `Created new task "${activity.taskTitle}"`
-      case 'priority':
-        return `Updated priority for "${activity.taskTitle}"`
-      case 'deadline':
-        return `Updated deadline for "${activity.taskTitle}"`
-      default:
-        return `Modified task "${activity.taskTitle}"`
-    }
-  }
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-50 text-green-600'
-      case 'in-progress':
-        return 'bg-yellow-50 text-yellow-600'
-      case 'pending':
-        return 'bg-gray-50 text-gray-600'
-      case 'overdue':
-        return 'bg-red-50 text-red-600'
-      default:
-        return 'bg-gray-50 text-gray-600'
-    }
-  }
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'completed':
-        return <FiCheckCircle className="w-4 h-4" />
-      case 'in-progress':
-        return <FiClock className="w-4 h-4" />
-      case 'pending':
-        return <FiClock className="w-4 h-4" />
-      case 'overdue':
-        return <FiAlertCircle className="w-4 h-4" />
-      default:
-        return <FiCircle className="w-4 h-4" />
-    }
-  }
-
-  const getProgressColor = (progress) => {
-    if (progress >= 80) return 'bg-green-500'
-    if (progress >= 50) return 'bg-yellow-500'
-    return 'bg-gray-500'
-  }
-
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high':
-        return 'text-red-500'
-      case 'medium':
-        return 'text-orange-500'
-      default:
-        return 'text-gray-500'
-    }
   }
 
   const handleEmailPreference = (key) => {
@@ -639,14 +561,11 @@ export default function ProfileBody() {
     tasks.reduce((acc, task) => acc + task.progress, 0) / tasks.length
   )
 
-  // Navigation items
+  // Navigation items with unique colors
   const navItems = [
-    { id: 'overview', label: 'Overview', icon: FiUser },
-    { id: 'history', label: 'History', icon: FiClock },
-    { id: 'tasks', label: 'Tasks', icon: FiCheckSquare },
-    { id: 'favorites', label: 'Favorites', icon: FiStar },
-    { id: 'activity', label: 'Activity', icon: FiActivity },
-    { id: 'settings', label: 'Settings', icon: FiSettings }
+    { id: 'overview', label: 'Overview', icon: FiUser, gradient: 'from-green-600 to-green-500' },
+    { id: 'favorites', label: 'Favorites', icon: FiStar, gradient: 'from-yellow-500 to-orange-500' },
+    { id: 'settings', label: 'Settings', icon: FiSettings, gradient: 'from-purple-600 to-purple-500' }
   ]
 
   const textareaRef = useRef(null)
@@ -776,6 +695,45 @@ export default function ProfileBody() {
     setProfileInfo(updatedInfo)
   }, [userName, userLocation, userLanguages, userPhone, userEmail])
 
+  // Add helper function for calculating days left
+  const calculateDaysLeft = (dueDate) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate);
+    due.setHours(0, 0, 0, 0);
+    const diffTime = due - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  // Add function to get category icon
+  const getCategoryIcon = (category) => {
+    switch (category?.toLowerCase()) {
+      case 'development':
+        return <FiCode className="w-4 h-4" />;
+      case 'design':
+        return <FiPenTool className="w-4 h-4" />;
+      case 'marketing':
+        return <FiTrendingUpIcon className="w-4 h-4" />;
+      case 'research':
+        return <FiSearch className="w-4 h-4" />;
+      case 'content':
+        return <FiType className="w-4 h-4" />;
+      default:
+        return <FiFolder className="w-4 h-4" />;
+    }
+  };
+
+  // Add helper function to format date
+  const formatDateShort = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
   return (
     <>
       <SuccessAlert 
@@ -798,27 +756,37 @@ export default function ProfileBody() {
           <span className="text-sm font-medium">{alertMessage}</span>
         </div>
       )}
-      {/* Main Navigation */}
-      <div className="bg-white shadow-sm mb-6 border-b">
-        <div className="max-w-7xl mx-auto px-4">
-          <nav className="flex justify-center space-x-8" aria-label="Profile Navigation">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-2 px-4 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                  activeTab === item.id
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
+      <motion.div 
+        className="flex gap-3 bg-white p-2 rounded-xl shadow-sm mx-auto mb-8 w-fit"
+        layout
+      >
+        {navItems.map((item) => (
+          <motion.button
+            key={item.id}
+            onClick={() => setActiveTab(item.id)}
+            className={`relative flex items-center gap-3 px-6 py-3 text-base font-medium rounded-lg transition-all duration-200 ${
+              activeTab === item.id
+                ? 'text-white'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            {activeTab === item.id && (
+              <motion.div
+                layoutId="activeTab"
+                className={`absolute inset-0 bg-gradient-to-r ${item.gradient} rounded-lg`}
+                initial={false}
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <span className="relative z-10 flex items-center gap-3">
+              <item.icon className={`w-5 h-5 ${
+                activeTab === item.id ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
+              }`} />
+              <span>{item.label}</span>
+            </span>
+          </motion.button>
+        ))}
+      </motion.div>
 
       {/* Content Sections */}
       <div className="max-w-7xl mx-auto px-4">
@@ -827,7 +795,7 @@ export default function ProfileBody() {
             {/* Profile Info Column */}
             <div className="col-span-12 lg:col-span-4">
               {/* Profile Info Card */}
-              <div className="bg-white rounded-lg shadow-sm p-6 max-h-[calc(340vh-13rem)] max-w-full min-h-[calc(113vh-13rem)] min-w-full">
+              <div className="bg-white rounded-lg shadow-sm p-6 max-h-[calc(340vh-13rem)] max-w-full min-h-[calc(98vh-13rem)] min-w-full">
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex items-center gap-2">
                     <div className="p-2 bg-green-50 rounded-full">
@@ -896,7 +864,7 @@ export default function ProfileBody() {
             {/* Skills and About Column */}
             <div className="col-span-12 lg:col-span-8 space-y-6">
               {/* About Card */}
-              <div className="bg-white rounded-lg shadow-sm p-6 min-h-[calc(65vh-8rem)] max-h-[calc(100vh-8rem)] max-w-full">
+              <div className="bg-white rounded-lg shadow-sm p-6 min-h-[calc(50vh-8rem)] max-h-[calc(100vh-8rem)] max-w-full">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <div className="p-2 bg-purple-50 rounded-full">
@@ -989,7 +957,7 @@ export default function ProfileBody() {
               </div>
 
               {/* Skills Card */}
-              <div className="bg-white rounded-lg shadow-sm p-6 min-h-[calc(65vh-8rem)] max-h-[calc(100vh-8rem)] max-w-full">
+              <div className="bg-white rounded-lg shadow-sm p-6 min-h-[calc(50vh-8rem)] max-h-[calc(100vh-8rem)] max-w-full">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <div className="p-2 bg-blue-50 rounded-full">
@@ -1089,353 +1057,256 @@ export default function ProfileBody() {
           </div>
         )}
 
-        {activeTab === 'history' && (
-          <HistorySection />
-        )}
-
-        {activeTab === 'tasks' && (
-          <div className="space-y-6">
-            {/* Task Statistics Section */}
-            <div className="bg-white rounded-lg shadow-sm">
-              <div className="p-6 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-green-50 rounded-full">
-                    <FiPieChart className="w-4 h-4 text-green-600" />
+        {activeTab === 'favorites' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="p-6">
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-yellow-50 rounded-full">
+                      <FiStar className="w-5 h-5 text-yellow-600" />
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-900">Favorite Tasks</h2>
                   </div>
-                  <h2 className="text-lg font-semibold text-gray-900">Task Statistics</h2>
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiSearch className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search favorite tasks..."
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm"
+                  />
                 </div>
               </div>
               
-              <div className="p-6">
-                {/* Time Filter */}
-                <div className="flex gap-2 mb-6">
-                  <button 
-                    onClick={() => setActiveTimeFilter('today')}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
-                      activeTimeFilter === 'today'
-                        ? 'bg-green-100 text-green-700'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    Today
-                  </button>
-                  <button 
-                    onClick={() => setActiveTimeFilter('week')}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
-                      activeTimeFilter === 'week'
-                        ? 'bg-green-100 text-green-700'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    Week
-                  </button>
-                  <button 
-                    onClick={() => setActiveTimeFilter('month')}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
-                      activeTimeFilter === 'month'
-                        ? 'bg-green-100 text-green-700'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    Month
-                  </button>
-                </div>
-
-                {/* Statistics Grid */}
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-600">Completed Tasks</span>
-                      <div className="p-1.5 bg-green-100 rounded-full">
-                        <FiCheckCircle className="w-4 h-4 text-green-600" />
-                      </div>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-bold text-gray-900">24</span>
-                      <span className="text-sm text-green-600">+12.5%</span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-600">In Progress</span>
-                      <div className="p-1.5 bg-blue-100 rounded-full">
-                        <FiClock className="w-4 h-4 text-blue-600" />
-                      </div>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-bold text-gray-900">8</span>
-                      <span className="text-sm text-blue-600">Active</span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-600">Total Tasks</span>
-                      <div className="p-1.5 bg-indigo-100 rounded-full">
-                        <FiList className="w-4 h-4 text-indigo-600" />
-                      </div>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-bold text-gray-900">
-                        {Object.values(categoryStats).reduce((sum, category) => sum + category.total, 0)}
-                      </span>
-                      <span className="text-sm text-indigo-600">tasks</span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-600">Completion Rate</span>
-                      <div className="p-1.5 bg-purple-100 rounded-full">
-                        <FiTrendingUp className="w-4 h-4 text-purple-600" />
-                      </div>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-bold text-gray-900">75%</span>
-                      <span className="text-sm text-purple-600">+5%</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Category Progress */}
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-medium text-gray-900">Category Progress</h3>
-                    <button
-                      onClick={() => setIsCategoryModalOpen(true)}
-                      className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
-                    >
-                      View All
-                    </button>
-                  </div>
-                  <div className="space-y-4">
-                    {Object.entries(categoryStats).map(([category, stats]) => (
-                      <div key={category}>
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span 
-                              className="w-2 h-2 rounded-full" 
-                              style={{ backgroundColor: stats.color }}
-                            ></span>
-                            <span className="text-sm text-gray-600 capitalize">{category}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-gray-900">
-                              {stats.count}/{stats.total}
-                            </span>
-                            <span className="text-sm text-gray-500">
-                              ({Math.round((stats.count / stats.total) * 100)}%)
-                            </span>
-                          </div>
-                        </div>
-                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full rounded-full transition-all duration-300"
-                            style={{ 
-                              backgroundColor: stats.color,
-                              width: `${(stats.count / stats.total) * 100}%` 
-                            }}
-                          ></div>
-                        </div>
-                      </div>
+              {isLoadingFavorites ? (
+                <div className="py-8">
+                  <div className="animate-pulse space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-24 bg-gray-100 rounded-lg"></div>
                     ))}
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Last Task Section */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-green-50 rounded-full">
-                    <FiCheckCircle className="w-5 h-5 text-green-600" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-gray-900">Last Task</h2>
-                </div>
-              </div>
-              
-              {tasks.length > 0 ? (
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className={`w-2 h-2 rounded-full ${getStatusColor(tasks[0].status)}`} />
-                        <h3 className="text-base font-medium text-gray-900">
-                          {tasks[0].title}
-                        </h3>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <FiClock className="w-4 h-4 text-gray-500" />
-                          <span>Due {tasks[0].dueDate}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {tasks[0].status === 'completed' ? (
-                            <FiCheckCircle className="w-4 h-4 text-green-500" />
-                          ) : (
-                            <FiAlertCircle className="w-4 h-4 text-indigo-500" />
-                          )}
-                          <span className="capitalize">{tasks[0].status.replace('-', ' ')}</span>
-                        </div>
-                      </div>
-                      <div className="mt-4">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm font-medium text-gray-700">Progress</span>
-                          <span className="text-sm font-medium text-indigo-600">{tasks[0].progress}%</span>
-                        </div>
-                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full ${getProgressColor(tasks[0].progress)} transition-all duration-500`}
-                            style={{ width: `${tasks[0].progress}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-6">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-4">
-                    <FiCheckSquare className="w-6 h-6 text-gray-400" />
-                  </div>
-                  <h3 className="text-sm font-medium text-gray-900 mb-1">No tasks yet</h3>
-                  <p className="text-sm text-gray-500">Create your first task to get started</p>
-                </div>
-              )}
-            </div>
-
-            {/* Recent Tasks Section */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-indigo-50 rounded-full">
-                    <FiClock className="w-5 h-5 text-indigo-600" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-gray-900">Recent Tasks</h2>
-                </div>
-              </div>
-              <div className="space-y-4">
-                {tasks.slice(0, 3).map((task) => (
-                  <div
-                    key={task.id}
-                    className="group relative bg-white border border-gray-100 rounded-xl p-4 hover:border-indigo-200 transition-colors"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className={`w-2 h-2 rounded-full ${getStatusColor(task.status)}`} />
-                          <h3 className="text-base font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
+              ) : filteredFavoriteTasks.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-[1400px] mx-auto px-4 py-6">
+                  {filteredFavoriteTasks.map((task) => (
+                    <motion.div
+                      key={task._id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="group relative p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg hover:border-gray-300 transition-all duration-300 hover:scale-[1.02] hover:bg-gray-50/50"
+                    >
+                      {/* Priority Indicator */}
+                      <div className={`absolute top-0 right-0 w-16 h-1 rounded-tr-xl ${
+                        task.priority === 'high' ? 'bg-red-500' :
+                        task.priority === 'medium' ? 'bg-yellow-500' :
+                        'bg-green-500'
+                      }`} />
+                      
+                      {/* Task Header */}
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors line-clamp-2 flex-1 mr-4">
                             {task.title}
                           </h3>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <FiClock className="w-4 h-4 text-gray-500" />
-                            <span>Due {task.dueDate}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {task.status === 'completed' ? (
-                              <FiCheckCircle className="w-4 h-4 text-green-500" />
-                            ) : (
-                              <FiAlertCircle className="w-4 h-4 text-indigo-500" />
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            {/* Days Left Badge */}
+                            {task.dueDate && task.status !== 'completed' && (
+                              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                                calculateDaysLeft(task.dueDate) < 0
+                                  ? 'bg-red-100 text-red-700'  // Overdue
+                                  : calculateDaysLeft(task.dueDate) === 0
+                                  ? 'bg-orange-100 text-orange-700'  // Due today
+                                  : calculateDaysLeft(task.dueDate) <= 3
+                                  ? 'bg-yellow-100 text-yellow-700'  // Due soon
+                                  : 'bg-blue-50 text-blue-700'  // Due later
+                              }`}>
+                                <FiClock className="w-3.5 h-3.5" />
+                                {calculateDaysLeft(task.dueDate) < 0
+                                  ? `${Math.abs(calculateDaysLeft(task.dueDate))} days overdue`
+                                  : calculateDaysLeft(task.dueDate) === 0
+                                  ? 'Due today'
+                                  : calculateDaysLeft(task.dueDate) === 1
+                                  ? '1 day left'
+                                  : `${calculateDaysLeft(task.dueDate)} days left`}
+                              </div>
                             )}
-                            <span className="capitalize">{task.status.replace('-', ' ')}</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('Star clicked for task:', task._id);
+                                toggleFavorite(task._id, task.favorite);
+                              }}
+                              className="p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer z-10"
+                            >
+                              <FiStar 
+                                className={`w-5 h-5 ${task.favorite ? 'text-yellow-400 fill-current' : 'text-gray-400'} transition-colors hover:text-yellow-400`}
+                              />
+                            </button>
+                          </div>
+                        </div>
+                    
+                      </div>
+
+                      {/* Task Description and Date Range Row */}
+                      <div className="flex items-start justify-between gap-4 mb-4">
+                        {/* Task Description */}
+                        <p className="text-sm text-gray-600 line-clamp-2 flex-1">
+                          {task.description || 'No description provided'}
+                        </p>
+
+                        {/* Date Range Badge */}
+                        <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200 whitespace-nowrap flex-shrink-0">
+                          <FiCalendar className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                          <div className="flex items-center gap-1.5">
+                            <span>{formatDateShort(task.startDate)}</span>
+                            <FiArrowRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                            <span>{formatDateShort(task.dueDate)}</span>
+                          </div>
+                        </span>
+                      </div>
+
+                      {/* Task Details */}
+                      <div className="space-y-3">
+                        {/* Status and Priority Row */}
+                        <div className="flex items-start justify-between">
+                          {/* Status and Category Column */}
+                          <div className="flex flex-col gap-2">
+                            {/* Status Badge */}
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
+                              task.status === 'completed' ? 'bg-green-100 text-green-700 border border-green-200' :
+                              task.status === 'in progress' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
+                              'bg-blue-100 text-blue-700 border border-blue-200'
+                            }`}>
+                              <div className={`w-1.5 h-1.5 rounded-full ${
+                                task.status === 'completed' ? 'bg-green-500' :
+                                task.status === 'in progress' ? 'bg-yellow-500' :
+                                'bg-blue-500'
+                              }`} />
+                              {task.status === 'completed' ? 'Done' :
+                               task.status === 'in progress' ? 'In Progress' :
+                               'To Do'}
+                            </span>
+
+                          </div>
+
+                          {/* Priority and Category Badges */}
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium
+                              ${task.priority === 'high' ? 'bg-red-100 text-red-700' :
+                                task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-green-100 text-green-700'}`}>
+                              {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} Priority
+                            </span>
+                            
+                            {/* Category Badge */}
+                            {task.category && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                {getCategoryIcon(task.category)}
+                                {task.category}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
-                    </div>
-                    {/* Progress Bar */}
-                    <div className="mt-4 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full ${getProgressColor(task.progress)} transition-all duration-500`}
-                        style={{ width: `${task.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
-        {activeTab === 'activity' && (
-          <div className="space-y-6">
-            {/* Activity Feed */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-indigo-50 rounded-full">
-                    <FiActivity className="w-5 h-5 text-indigo-600" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-gray-900">Activity Feed</h2>
-                </div>
-                <div className="flex bg-gray-100 p-1 rounded-lg">
-                  <button 
-                    onClick={() => setActiveTimeFilter('today')}
-                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      activeTimeFilter === 'today'
-                        ? 'bg-white text-indigo-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Today
-                  </button>
-                  <button 
-                    onClick={() => setActiveTimeFilter('week')}
-                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      activeTimeFilter === 'week'
-                        ? 'bg-white text-indigo-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Week
-                  </button>
-                  <button 
-                    onClick={() => setActiveTimeFilter('month')}
-                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      activeTimeFilter === 'month'
-                        ? 'bg-white text-indigo-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Month
-                  </button>
-                </div>
-              </div>
-              <div className="relative">
-                <div className="absolute top-0 left-4 bottom-0 w-0.5 bg-gray-200" />
-                <div className="space-y-8">
-                  {activities.slice(0, 5).map((activity) => (
-                    <div key={activity.id} className="relative flex gap-4 items-start">
-                      <div className="absolute -left-2 w-8 h-8 flex items-center justify-center">
-                        <div className={`p-1.5 rounded-full ${activity.color.replace('text-', 'bg-').replace('500', '100')}`}>
-                          <activity.icon className={`w-4 h-4 ${activity.color}`} />
-                        </div>
-                      </div>
-                      <div className="flex-1 ml-8">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-900">{activity.title}</span>
-                          <span className="text-sm text-gray-500">{formatTimestamp(activity.timestamp)}</span>
-                        </div>
-                        {activity.details && (
-                          <p className="mt-1 text-sm text-gray-500">{activity.details}</p>
-                        )}
-                      </div>
-                    </div>
+                      {/* Hover Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/[0.03] to-transparent opacity-0 group-hover:opacity-100 rounded-xl transition-opacity duration-300" />
+                    </motion.div>
                   ))}
                 </div>
-              </div>
-              <div className="mt-8 pt-4 border-t border-gray-100">
-                <button
-                  onClick={() => setIsActivityModalOpen(true)}
-                  className="w-full py-2 text-sm text-indigo-600 hover:text-indigo-700 transition-colors flex items-center justify-center gap-2"
+              ) : searchQuery ? (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  className="flex flex-col items-center justify-center py-16"
                 >
-                  <FiChevronDown className="w-4 h-4" />
-                  View All Activity
-                </button>
-              </div>
+                  <motion.div 
+                    initial={{ scale: 0.8, rotate: -15 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ 
+                      duration: 0.5,
+                      ease: "easeOut",
+                      delay: 0.1
+                    }}
+                    className="relative inline-block mb-6"
+                  >
+                    <div className="absolute inset-0 bg-amber-100 rounded-full animate-ping opacity-20"></div>
+                    <div className="relative inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-amber-50 to-amber-100 shadow-lg shadow-amber-100/50">
+                      <FiSearch className="w-8 h-8 text-amber-500" />
+                    </div>
+                  </motion.div>
+                  
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                      duration: 0.4,
+                      ease: "easeOut",
+                      delay: 0.2
+                    }}
+                    className="text-center"
+                  >
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      No matching tasks found
+                    </h3>
+                    <p className="text-gray-500 max-w-sm mx-auto">
+                      Try adjusting your search terms or check your spelling
+                    </p>
+                  </motion.div>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  className="py-16 px-6"
+                >
+                  <div className="max-w-sm mx-auto text-center">
+                    <motion.div 
+                      initial={{ scale: 0.8, rotate: -15 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ 
+                        duration: 0.5,
+                        ease: "easeOut",
+                        delay: 0.1
+                      }}
+                      className="relative inline-block mb-6"
+                    >
+                      <div className="absolute inset-0 bg-yellow-100 rounded-full animate-ping opacity-20"></div>
+                      <div className="relative inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-yellow-50 to-yellow-100 shadow-lg shadow-yellow-100/50">
+                        <FiStar className="w-8 h-8 text-yellow-500" />
+                      </div>
+                    </motion.div>
+                    
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ 
+                        duration: 0.4,
+                        ease: "easeOut",
+                        delay: 0.2
+                      }}
+                    >
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        No favorites yet
+                      </h3>
+                      <p className="text-gray-500">
+                        Mark tasks as favorite in your dashboard to see them here
+                      </p>
+                    </motion.div>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </div>
         )}
@@ -1643,72 +1514,9 @@ export default function ProfileBody() {
             </div>
           </div>
         )}
-
-        {activeTab === 'favorites' && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-yellow-50 rounded-full">
-                    <FiStar className="w-5 h-5 text-yellow-600" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-gray-900">Favorite Items</h2>
-                </div>
-              </div>
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                className="py-16 px-6"
-              >
-                <div className="max-w-sm mx-auto text-center">
-                  <motion.div 
-                    initial={{ scale: 0.8, rotate: -15 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ 
-                      duration: 0.5,
-                      ease: "easeOut",
-                      delay: 0.1
-                    }}
-                    className="relative inline-block mb-6"
-                  >
-                    <div className="absolute inset-0 bg-yellow-100 rounded-full animate-ping opacity-20"></div>
-                    <div className="relative inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-yellow-50 to-yellow-100">
-                      <FiStar className="w-8 h-8 text-yellow-500" />
-                    </div>
-                  </motion.div>
-                  
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ 
-                      duration: 0.4,
-                      ease: "easeOut",
-                      delay: 0.2
-                    }}
-                  >
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      No favorites yet
-                    </h3>
-                    <p className="text-gray-500">
-                      Items you mark as favorite will appear here for quick access
-                    </p>
-                  </motion.div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Modals */}
-      <ActivityModal
-        isOpen={isActivityModalOpen}
-        onClose={() => setIsActivityModalOpen(false)}
-        activities={activities}
-        formatTimestamp={formatTimestamp}
-        getActivityMessage={getActivityMessage}
-      />
       <ProfileInfoModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
@@ -1720,11 +1528,7 @@ export default function ProfileBody() {
         onClose={() => setIsAboutModalOpen(false)}
         description={editedDescription}
       />
-      <CategoryModal
-        isOpen={isCategoryModalOpen}
-        onClose={() => setIsCategoryModalOpen(false)}
-        categoryStats={categoryStats}
-      />
+
       <SkillModal
         isOpen={isSkillModalOpen}
         onClose={() => setIsSkillModalOpen(false)}

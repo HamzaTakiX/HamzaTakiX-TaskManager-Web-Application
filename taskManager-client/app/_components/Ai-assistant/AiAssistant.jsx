@@ -631,27 +631,27 @@ export function AiAssistant({ isSidebarCollapsed }) {
                       </div>
                     </div>
                     {msg.type === 'user' && (
-                      <div className="w-[44px] h-[44px] rounded-full bg-gradient-to-r from-blue-400 to-blue-600 flex items-center justify-center absolute -right-14 top-1/2 -translate-y-1/2 flex-shrink-0 shadow-lg border-2 border-white dark:border-gray-800 ring-1 ring-blue-400/50">
+                      <div className="w-[44px] h-[44px] rounded-full bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 flex items-center justify-center absolute -right-14 top-1/2 -translate-y-1/2 flex-shrink-0 shadow-xl shadow-blue-400/20 border-2 border-white/90 dark:border-gray-800 ring-2 ring-blue-400/30 hover:scale-105 hover:rotate-3 transform transition-all duration-300 group">
                         {profileImage ? (
                           <Image
                             src={profileImage.startsWith('http') ? profileImage : `${SERVER_URL}${profileImage}`}
                             alt={userName || 'User'}
                             width={44}
                             height={44}
-                            className="rounded-full object-cover w-[44px] h-[44px]"
+                            className="rounded-full object-cover w-[42px] h-[42px] group-hover:scale-95 transition-transform duration-300"
                             onError={(e) => {
                               e.target.onerror = null;
                               e.target.src = '/images/user-avatar.svg';
-                              e.target.className = 'text-white w-9 h-9';
+                              e.target.className = 'text-white w-8 h-8 group-hover:scale-95 transition-transform duration-300';
                             }}
                           />
                         ) : (
                           <Image
                             src="/images/user-avatar.svg"
                             alt={userName || 'User'}
-                            width={36}
-                            height={36}
-                            className="text-white"
+                            width={32}
+                            height={32}
+                            className="text-white group-hover:scale-95 transition-transform duration-300"
                           />
                         )}
                       </div>

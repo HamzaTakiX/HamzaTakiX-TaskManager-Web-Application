@@ -564,10 +564,11 @@ const TaskCard = ({ task, onMoveTask, onRemoveTask, onUpdateTask, onToggleStar, 
       <div className="mb-5">
         <h4 className="text-xs font-medium text-gray-900 mb-1.5 opacity-70">Description</h4>
         <div 
-          className="group cursor-default"
+          className="group cursor-pointer"
           title={task?.description || 'No description provided'}
+          onClick={() => setShowTaskDetails(true)}
         >
-          <p className="text-sm text-gray-500 line-clamp-3 group-hover:line-clamp-none transition-all duration-200">
+          <p className="text-sm text-gray-500 line-clamp-3">
             {task?.description || 'No description provided'}
           </p>
         </div>

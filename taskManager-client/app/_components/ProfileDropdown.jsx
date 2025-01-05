@@ -87,7 +87,6 @@ export default function ProfileDropdown({ isOpen, onClose }) {
 
   const menuItems = [
     { icon: FiUser, text: t.myProfile, href: '/profile' },
-    { icon: FiHelpCircle, text: t.faq, href: '/faq' },
     { icon: FiCheckCircle, text: t.verified, className: 'text-green-500', static: true, iconClassName: 'text-green-500' },
   ]
 

@@ -3,42 +3,17 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
-import axios from 'axios'
-import Cookies from 'js-cookie'
+import api from '../_utils/axiosConfig'
+import { useAuth } from './AuthContext'
 
 const TaskContext = createContext()
 
-// Initialize sample tasks with proper dates
-const initialTasks = [
-  {
-    id: 1,
-    title: 'Design System',
-    description: 'Create a cohesive design system for the application',
-    category: 'Design',
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    status: 'todo',
-    labels: [
-      { type: 'design', name: 'Design System' }
-    ]
-  },
-  {
-    id: 2,
-    title: 'Backend Development',
-    description: 'Implement core backend functionality',
-    category: 'Development',
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    status: 'in-progress',
-    labels: [
-      { type: 'feature', name: 'Backend Development' }
-    ]
-  }
-]
-
 export function TaskProvider({ children }) {
-  const [tasks, setTasks] = useState(initialTasks)
+  const [tasks, setTasks] = useState([])
   const [taskCount, setTaskCount] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const [selectedTasks, setSelectedTasks] = useState([])
   const [viewPreferences, setViewPreferences] = useState({
     view: 'list',
     sortBy: 'dueDate',
@@ -50,58 +25,30 @@ export function TaskProvider({ children }) {
       category: 'all'
     }
   })
-  const [selectedTasks, setSelectedTasks] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isClient, setIsClient] = useState(false)
 
-  // Initialize task count from localStorage after mount
-  useEffect(() => {
-    const storedCount = localStorage.getItem('taskCount')
-    if (storedCount) {
-      setTaskCount(parseInt(storedCount))
-    }
-    // Then fetch the latest count from the server
-    updateTaskCount()
-  }, []) // Run once on mount
-
-  // Set isClient to true once component mounts
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
-
-  // Define updateTaskCount as a callback function
   const updateTaskCount = useCallback(async () => {
-    try {
-      const token = Cookies.get('token') || localStorage.getItem('token');
-      
-      if (!token) {
-        console.error('No authentication token found');
-        return;
-      }
+    if (!isAuthenticated) {
+      setTaskCount(0);
+      return;
+    }
 
-      const response = await axios.get('http://localhost:9000/api/tasks', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+    try {
+      const response = await api.get('/tasks');
       
       // Handle both response formats (with and without .state)
       const tasksData = response.data.state ? response.data.tasks : response.data;
       
       if (Array.isArray(tasksData)) {
-        // Count only todo tasks that are not cancelled and not validated
         const todoTasks = tasksData.filter(task => {
-          const normalizedStatus = task.status?.toLowerCase().trim().replace(/\s+/g, '');
-          const isTodoStatus = ['todo', 'to-do', 'todo'].includes(normalizedStatus);
-          console.log('Task count check:', {
-            id: task._id,
+          // Log each task for debugging
+          console.log('Processing task:', {
+            id: task.id,
+            title: task.title,
             status: task.status,
-            normalizedStatus,
-            isTodoStatus,
             cancelled: task.cancelled,
             validation: task.validation
           });
-          return isTodoStatus && !task.cancelled && !task.validation;
+          return !task.cancelled && !task.validation;
         });
         console.log('Todo tasks count:', todoTasks.length);
         setTaskCount(todoTasks.length);
@@ -111,66 +58,55 @@ export function TaskProvider({ children }) {
       }
     } catch (error) {
       console.error('Error updating task count:', error);
-    }
-  }, []); // Empty dependency array since we don't use any external values
-
-  // Load initial task count
-  useEffect(() => {
-    updateTaskCount()
-  }, []) // Run once on mount
-
-  // Update count on initial load
-  useEffect(() => {
-    if (isClient) {
-      updateTaskCount()
-    }
-  }, [isClient, updateTaskCount])
-
-  // Separate effect to update localStorage when taskCount changes
-  useEffect(() => {
-    if (isClient) {
-      localStorage.setItem('taskCount', taskCount.toString())
-    }
-  }, [taskCount, isClient])
-
-  // Fetch real tasks count on initial load and when tasks change
-  useEffect(() => {
-    const fetchTaskCount = async () => {
-      try {
-        const token = Cookies.get('token') || localStorage.getItem('token');
-        
-        if (!token) {
-          console.error('No authentication token found');
-          return;
-        }
-
-        const response = await axios.get('http://localhost:9000/api/tasks', {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        })
-
-        if (response.data.state) {
-          const activeTasks = response.data.tasks.filter(task => !task.cancelled && !task.validation)
-          setTaskCount(activeTasks.length)
-          // Store the count in localStorage to persist across page changes
-          localStorage.setItem('taskCount', activeTasks.length.toString())
-        }
-      } catch (error) {
-        console.error('Error fetching task count:', error)
-      } finally {
-        setIsLoading(false)
+      // On error, try to use the stored count
+      const storedCount = localStorage.getItem('taskCount');
+      if (storedCount) {
+        setTaskCount(parseInt(storedCount));
       }
     }
+  }, [isAuthenticated]);
 
-    // Try to get stored count first
-    const storedCount = localStorage.getItem('taskCount')
+  // Initialize task count from localStorage after mount
+  useEffect(() => {
+    const storedCount = localStorage.getItem('taskCount');
     if (storedCount) {
-      setTaskCount(parseInt(storedCount))
+      setTaskCount(parseInt(storedCount));
     }
+  }, []);
 
-    fetchTaskCount()
-  }, [tasks]) // Add tasks as dependency to update count when tasks change
+  // Update count when authentication state changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      updateTaskCount();
+    }
+  }, [isAuthenticated, updateTaskCount]);
+
+  // Fetch tasks when authenticated
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (!isAuthenticated || authLoading) {
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const response = await api.get('/tasks');
+        
+        if (response.data.state) {
+          const activeTasks = response.data.tasks.filter(task => !task.cancelled);
+          setTasks(activeTasks);
+          setTaskCount(activeTasks.length);
+          localStorage.setItem('taskCount', activeTasks.length.toString());
+        }
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, [isAuthenticated, authLoading]);
 
   // View management
   const changeView = useCallback((newView) => {
@@ -184,18 +120,14 @@ export function TaskProvider({ children }) {
   const exportAsCSV = useCallback(async () => {
     try {
       console.log('Fetching tasks for CSV export...')
-      const token = Cookies.get('token') || localStorage.getItem('token');
+      const token = localStorage.getItem('token');
       
       if (!token) {
         console.error('No authentication token found');
         return;
       }
 
-      const response = await axios.get('http://localhost:9000/api/tasks', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
+      const response = await api.get('/tasks');
       
       console.log('API Response:', response.data)
       
@@ -246,18 +178,14 @@ export function TaskProvider({ children }) {
   const exportAsPDF = useCallback(async () => {
     try {
       console.log('Fetching tasks for PDF export...')
-      const token = Cookies.get('token') || localStorage.getItem('token');
+      const token = localStorage.getItem('token');
       
       if (!token) {
         console.error('No authentication token found');
         return;
       }
 
-      const response = await axios.get('http://localhost:9000/api/tasks', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
+      const response = await api.get('/tasks');
       
       console.log('API Response:', response.data)
       
@@ -319,18 +247,14 @@ export function TaskProvider({ children }) {
 
   const refreshTasks = useCallback(async () => {
     try {
-      const token = Cookies.get('token') || localStorage.getItem('token');
+      const token = localStorage.getItem('token');
       
       if (!token) {
         console.error('No authentication token found');
         return;
       }
 
-      const response = await axios.get('http://localhost:9000/api/tasks', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
+      const response = await api.get('/tasks');
 
       if (response.data) {
         // Trigger a task count update
@@ -355,19 +279,11 @@ export function TaskProvider({ children }) {
   const deleteTasks = useCallback(async (taskIds) => {
     try {
       await Promise.all(taskIds.map(id => 
-        axios.delete(`http://localhost:9000/api/tasks/${id}`, {
-          headers: {
-            Authorization: `Bearer ${Cookies.get('token')}`
-          }
-        })
+        api.delete(`/tasks/${id}`)
       ))
       setTasks(prevTasks => prevTasks.filter(task => !taskIds.includes(task.id)))
       // Update task count after deletion
-      const response = await axios.get('http://localhost:9000/api/tasks', {
-        headers: {
-          Authorization: `Bearer ${Cookies.get('token')}`
-        }
-      })
+      const response = await api.get('/tasks');
       if (response.data.state) {
         const activeTasks = response.data.tasks.filter(task => !task.cancelled && !task.validation)
         setTaskCount(activeTasks.length)
@@ -386,11 +302,7 @@ export function TaskProvider({ children }) {
         endDate: task.endDate ? new Date(task.endDate).toISOString() : null
       }
 
-      const response = await axios.post('http://localhost:9000/api/tasks', formattedTask, {
-        headers: {
-          Authorization: `Bearer ${Cookies.get('token')}`
-        }
-      })
+      const response = await api.post('/tasks', formattedTask);
 
       if (!response.data || !response.data.state) {
         throw new Error(response.data?.message || 'Failed to add task')
@@ -407,11 +319,7 @@ export function TaskProvider({ children }) {
 
   const updateTask = useCallback(async (updatedTask) => {
     try {
-      const response = await axios.put(`http://localhost:9000/api/tasks/${updatedTask._id}`, updatedTask, {
-        headers: {
-          Authorization: `Bearer ${Cookies.get('token')}`
-        }
-      });
+      const response = await api.put(`/tasks/${updatedTask._id}`, updatedTask);
 
       if (!response.data || !response.data.state) {
         throw new Error(response.data?.message || 'Failed to update task');

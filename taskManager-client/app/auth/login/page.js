@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
 import axios from '../../_utils/axiosConfig';
-import Cookies from 'js-cookie';
+import { useAuth } from '../../_context/AuthContext';
 import { useUser } from '../../_context/UserContext';
 
 function Login() {
@@ -12,6 +12,7 @@ function Login() {
   const { register, handleSubmit, formState: { errors } } = useForm();
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
   const { 
     updateUserName, 
     updateUserEmail, 
@@ -32,7 +33,6 @@ function Login() {
       });
 
       if (response.data.state) {
-        // Store the token and user data immediately
         if (response.data.token && response.data.user) {
           // Capitalize the first letter of each word in the name
           const formattedName = response.data.user.fullName
@@ -43,35 +43,13 @@ function Login() {
           // Clear any existing welcome state
           localStorage.removeItem('hasShownWelcome');
           
-          // Store token in both localStorage and cookies
-          localStorage.setItem('token', response.data.token);
-          Cookies.set('token', response.data.token, { 
-            expires: 7,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Lax'
+          // Use the auth context to handle login
+          login(response.data.token, {
+            ...response.data.user,
+            fullName: formattedName
           });
           
-          // Store user data
-          localStorage.setItem('userName', formattedName);
-          localStorage.setItem('userEmail', response.data.user.email);
-          localStorage.setItem('userJob', response.data.user.job);
-          localStorage.setItem('userLocation', response.data.user.location || 'Casablanca, Morocco');
-          localStorage.setItem('joinedDate', response.data.user.joinedDate || new Date().toISOString());
-          
-          // Handle profile and banner images
-          if (response.data.user.profileImage && response.data.user.profileImage !== 'none') {
-            localStorage.setItem('profileImage', response.data.user.profileImage);
-          } else {
-            localStorage.removeItem('profileImage');
-          }
-          
-          if (response.data.user.bannerImage && response.data.user.bannerImage !== 'none') {
-            localStorage.setItem('bannerImage', response.data.user.bannerImage);
-          } else {
-            localStorage.removeItem('bannerImage');
-          }
-
-          // Update context
+          // Update user context
           updateUserName(formattedName);
           updateUserEmail(response.data.user.email);
           updateUserJob(response.data.user.job);

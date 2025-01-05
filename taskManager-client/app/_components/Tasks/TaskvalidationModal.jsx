@@ -121,7 +121,7 @@ const TaskvalidationModal = ({ task, onClose, onUpdate }) => {
         { 
           validation: true,
           cancelled: false,
-          status: 'in-progress'
+          status: 'In Progress'
         },
         { headers: { Authorization: `Bearer ${token}` }}
       );
@@ -143,7 +143,7 @@ const TaskvalidationModal = ({ task, onClose, onUpdate }) => {
             ...task,
             validation: true,
             cancelled: false,
-            status: 'in-progress'
+            status: 'In Progress'
           };
           await onUpdate(updatedTask);
         }

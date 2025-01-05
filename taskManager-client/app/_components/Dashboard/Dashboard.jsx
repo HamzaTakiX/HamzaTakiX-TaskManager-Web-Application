@@ -15,7 +15,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import TaskDetailsModal from '../Shared/TaskDetailsModal';
 import Pagination from '../Shared/Pagination';
-import CategoryModal from '../Profile/CategoryModal';
+import CategoryModal from './CategoryModal';
 
 export default function Dashboard() {
   const { userName } = useUser();
@@ -359,7 +359,7 @@ export default function Dashboard() {
       case 'maintenance':
         return 'bg-gray-50 text-gray-700 border-gray-200 shadow-sm shadow-gray-100/50';
       case 'other':
-        return 'bg-slate-50 text-slate-700 border-slate-200 shadow-sm shadow-slate-100/50';
+        return 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200 shadow-sm shadow-fuchsia-100/50';
       default:
         return 'bg-gray-50 text-gray-600 border-gray-200 shadow-sm shadow-gray-100/50';
     }
@@ -395,7 +395,7 @@ export default function Dashboard() {
       case 'maintenance':
         return 'bg-gray-500';
       case 'other':
-        return 'bg-slate-500';
+        return 'bg-fuchsia-500';
       default:
         return 'bg-gray-400';
     }
@@ -432,7 +432,7 @@ export default function Dashboard() {
       case 'maintenance':
         return <FiTool className={`w-4 h-4 ${colorClass}`} />;
       case 'other':
-        return <FiFolder className={`w-4 h-4 ${colorClass}`} />;
+        return <FiMoreHorizontal className={`w-4 h-4 text-fuchsia-500`} />;
       default:
         return <FiFolder className={`w-4 h-4 ${colorClass}`} />;
     }
@@ -1165,24 +1165,20 @@ export default function Dashboard() {
                     <div className="flex items-center gap-4 flex-grow max-w-md">
                       <div className="flex-grow">
                         <div className="group relative">
-                          <h3 className="text-gray-800 font-medium truncate hover:text-blue-600 transition-colors">
-                            {task.title}
+                          <h3 className="text-gray-800 font-medium truncate hover:text-blue-600 transition-colors cursor-pointer" title={task.title}>
+                            {truncateText(task.title, 40)}
                           </h3>
-                          {task.title.length > 50 && (
-                            <div className="absolute left-0 -top-2 z-10 invisible group-hover:visible bg-gray-900 text-white text-sm rounded px-2 py-1 w-full max-w-md">
-                              {task.title}
+                          {task.title.length > 40 && (
+                            <div className="absolute left-0 -top-8 z-20 invisible group-hover:visible bg-gray-900 text-white text-sm rounded-lg px-3 py-2 w-max max-w-[300px] shadow-lg">
+                              <div className="whitespace-normal break-words">{task.title}</div>
+                              <div className="absolute -bottom-1 left-4 w-2 h-2 bg-gray-900 transform rotate-45"></div>
                             </div>
                           )}
                         </div>
-                        <div className="group relative">
-                          <p className="text-sm text-gray-500 truncate">
-                            {task.description || 'No description provided'}
+                        <div className="mt-1">
+                          <p className="text-sm text-gray-500 line-clamp-2" title={task.description}>
+                            {task.description || 'No description'}
                           </p>
-                          {task.description && task.description.length > 50 && (
-                            <div className="absolute left-0 top-6 z-10 invisible group-hover:visible bg-gray-900 text-white text-sm rounded px-2 py-1 w-full max-w-md whitespace-normal">
-                              {task.description}
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>

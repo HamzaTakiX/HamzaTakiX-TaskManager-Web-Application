@@ -37,8 +37,8 @@ const TaskDetailsModal = ({ task, onClose, onUpdate }) => {
       days: durationInDays,
       color: durationInDays <= 0 ? 'red' : durationInDays <= 7 ? 'orange' : 'green',
       text: durationInDays <= 0 ? 'Overdue' : 
-            durationInDays === 1 ? '1 day' :
-            `${durationInDays} days`
+            durationInDays === 1 ? '1' :
+            `${durationInDays}`
     };
   };
 
@@ -177,15 +177,20 @@ const TaskDetailsModal = ({ task, onClose, onUpdate }) => {
 
             <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
               <h3 className="text-sm font-semibold text-gray-600 mb-3">Time Remaining</h3>
-              <div className="flex items-center space-x-3">
-                <div className="p-2 rounded-lg">
-                  <BsClockHistory className="w-5 h-5 text-gray-400" />
-                </div>
-                <div>
-                  <span className="text-sm text-gray-600">
-                    From {new Date(task.startDate).toLocaleDateString()} to {new Date(task.dueDate).toLocaleDateString()}
-                  </span>
-                </div>
+              <div>
+                {task.startDate && task.dueDate && (() => {
+                  const { days, color, text } = calculateTimeRemaining(task.startDate, task.dueDate);
+                  return (
+                    <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-base font-medium ${
+                      color === 'red' ? 'bg-red-100 text-red-800' :
+                      color === 'orange' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      <BsClockHistory className="w-5 h-5" />
+                      {text === 'Overdue' ? text : <>{text} days left</>}
+                    </span>
+                  );
+                })()}
               </div>
             </div>
           </div>

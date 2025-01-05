@@ -5,6 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from './_context/ThemeContext'
 import { TaskProvider } from './_context/TaskContext'
 import { UserProvider } from './_context/UserContext'
+import { AuthProvider } from './_context/AuthContext'
 import { Toaster } from 'react-hot-toast'
 import { SettingsProvider } from './_context/SettingsContext'
 
@@ -28,14 +29,16 @@ export default function RootLayout({ children }) {
         suppressHydrationWarning
       >
         <ThemeProvider>
-          <UserProvider>
-            <TaskProvider>
-              <SettingsProvider>
-                <Toaster position="top-center" />
-                {children}
-              </SettingsProvider>
-            </TaskProvider>
-          </UserProvider>
+          <AuthProvider>
+            <UserProvider>
+              <TaskProvider>
+                <SettingsProvider>
+                  <Toaster position="top-center" />
+                  {children}
+                </SettingsProvider>
+              </TaskProvider>
+            </UserProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

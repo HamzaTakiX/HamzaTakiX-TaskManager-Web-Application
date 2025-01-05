@@ -489,28 +489,48 @@ export default function ProfileHeader() {
                     <p className="text-gray-600 mt-1">@{userName?.toLowerCase().replace(/\s+/g, '') || 'username'}</p>
                     <div className="flex flex-wrap gap-4 mt-4 text-gray-600 text-sm">
                       {userEmail && (
-                        <div className="flex items-center gap-2">
-                          <FiMail className="w-4 h-4" />
-                          <span>{userEmail}</span>
-                        </div>
+                        <motion.div 
+                          whileHover={{ scale: 1.05 }}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-100 hover:bg-blue-100 transition-colors"
+                        >
+                          <div className="p-1 bg-blue-100 rounded-full">
+                            <FiMail className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <span className="text-blue-700">{userEmail}</span>
+                        </motion.div>
                       )}
                       {userJob && (
-                        <div className="flex items-center gap-2">
-                          <FiBriefcase className="w-4 h-4" />
-                          <span>{userJob}</span>
-                        </div>
+                        <motion.div 
+                          whileHover={{ scale: 1.05 }}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 rounded-full border border-purple-100 hover:bg-purple-100 transition-colors"
+                        >
+                          <div className="p-1 bg-purple-100 rounded-full">
+                            <FiBriefcase className="w-4 h-4 text-purple-600" />
+                          </div>
+                          <span className="text-purple-700">{userJob}</span>
+                        </motion.div>
                       )}
                       {userLocation && (
-                        <div className="flex items-center gap-2">
-                          <FiMapPin className="w-4 h-4" />
-                          <span>{userLocation}</span>
-                        </div>
+                        <motion.div 
+                          whileHover={{ scale: 1.05 }}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-full border border-green-100 hover:bg-green-100 transition-colors"
+                        >
+                          <div className="p-1 bg-green-100 rounded-full">
+                            <FiMapPin className="w-4 h-4 text-green-600" />
+                          </div>
+                          <span className="text-green-700">{userLocation}</span>
+                        </motion.div>
                       )}
                       {joinedDate && (
-                        <div className="flex items-center gap-2">
-                          <FiCalendar className="w-4 h-4" />
-                          <span>Joined {format(new Date(joinedDate), 'do MMMM yyyy')}</span>
-                        </div>
+                        <motion.div 
+                          whileHover={{ scale: 1.05 }}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 rounded-full border border-amber-100 hover:bg-amber-100 transition-colors"
+                        >
+                          <div className="p-1 bg-amber-100 rounded-full">
+                            <FiCalendar className="w-4 h-4 text-amber-600" />
+                          </div>
+                          <span className="text-amber-700">Joined {format(new Date(joinedDate), 'do MMMM yyyy')}</span>
+                        </motion.div>
                       )}
                     </div>
                   </>

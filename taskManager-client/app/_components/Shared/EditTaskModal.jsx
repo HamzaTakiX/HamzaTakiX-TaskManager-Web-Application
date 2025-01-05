@@ -269,19 +269,16 @@ const EditTaskModal = ({ task, onClose, onSubmit, onSuccess }) => {
                   <FiAlignLeft className="w-4 h-4 mr-2 text-gray-400" />
                   Description
                 </label>
-                <span className="text-xs text-gray-500">{formData.description.length}/500</span>
+                <span className="text-xs text-gray-500">{formData.description.length}</span>
               </div>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={(e) => {
-                  if (e.target.value.length <= 500) {
-                    handleInputChange(e);
-                  }
+                  handleInputChange(e);
                 }}
                 rows="4"
                 className="block w-full px-4 py-2.5 bg-gray-50 rounded-lg outline-none focus:ring-2 focus:ring-green-500 transition-all resize-none text-sm"
-                maxLength={500}
               />
             </motion.div>
 

@@ -499,9 +499,9 @@ const TaskList = ({
                 </div>
               )}
               {settings.visibleColumns.timeRemaining && (
-                <div className="col-span-2 flex flex-col justify-center items-center text-sm">
+                <div className="col-span-2 flex items-center justify-center">
                   <FiClock className="w-4 h-4 mr-2 text-blue-500" />
-                  <span>Time Remaining</span>
+                  <span>Days Left</span>
                 </div>
               )}
               {settings.visibleColumns.priority && (
@@ -598,7 +598,7 @@ const TaskList = ({
 
                       {/* Time Remaining */}
                       {settings.visibleColumns.timeRemaining && task.dueDate && (
-                        <div className="col-span-2 flex justify-center items-center text-sm">
+                        <div className="col-span-2 flex items-center justify-center text-sm">
                           <motion.div
                             whileHover={{ scale: 1.05 }}
                             className={`inline-flex items-center justify-center min-w-[120px] px-3 py-1.5 rounded-full text-xs font-medium
